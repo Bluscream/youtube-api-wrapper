@@ -1,67 +1,56 @@
+# pip install requests blackboxprotobuf bbpb
 import requests
 import blackboxprotobuf
 import base64
 import json
+from typing import Dict, Any
 
-class TranscriptDownloader:
-    VIDEO_ID = 'ohtTai7AiN8ll '
-    
-    def __init__(self):
-        self.message = {
-            '1': 'asr',
-            '2': 'en',
+class YouTubeTranscriptDownloader:
+    url = 'https://www.youtube.com/youtubei/v1/get_transcript'
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    context = {
+        'client': {
+            'clientName': 'WEB',
+            'clientVersion': '2.20240313'
         }
-        self.typedef = {
-            '1': {'type': 'string'},
-            '2': {'type': 'string'}
-        }
-
-    def get(self, video_id):
-        self.VIDEO_ID = video_id
-        
-        # Generate the initial message and typedef
-        two = self._generate_base64_protobuf(self.message, self.typedef)
-        
-        # Update the message with the VIDEO_ID
-        self.message = {
-            '1': self.VIDEO_ID,
-            '2': two,
-        }
-        
-        # Generate the final params
-        params = self._generate_base64_protobuf(self.message, self.typedef)
-        
-        url = 'https://www.youtube.com/youtubei/v1/get_transcript'
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        data = {
-            'context': {
-                'client': {
-                    'clientName': 'WEB',
-                    'clientVersion': '2.20240313'
-                }
-            },
-            'params': params
-        }
-        
-        try:
-            response = requests.post(url, headers=headers, json=data)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"An error occurred: {e}")
-            return None
+    }
 
     @staticmethod
-    def _generate_base64_protobuf(message, typedef):
+    def encode_protobuf(message: Dict[str, Any], typedef: Dict[str, Dict[str, str]]) -> str:
         data = blackboxprotobuf.encode_message(message, typedef)
         return base64.b64encode(data).decode('ascii')
 
-# Usage example
-transcript_downloader = TranscriptDownloader()
-result = transcript_downloader.get('ohtTai7AiN8ll ')
-if result:
-    print(json.dumps(result, indent=4))
-else:
-    print("Failed to retrieve the transcript.")
+    def get(self, videoId: str, lang = "en"):
+        typedef = {
+                '1': {
+                    'type': 'string'
+                },
+                '2': {
+                    'type': 'string'
+                },
+        }
+        message = {
+            '1': videoId,
+            '2': YouTubeTranscriptDownloader.encode_protobuf({
+                '1': 'asr',
+                '2': lang,
+            }, typedef),
+        }
+        params = YouTubeTranscriptDownloader.encode_protobuf(message, typedef)
+
+        data = {
+            'context': self.context,
+            'params': params
+        }
+
+        data = requests.post(self.url, headers = self.headers, json = data).json()
+        return data
+
+if __name__ == "__main__":
+    downloader = YouTubeTranscriptDownloader()
+    result = downloader.get('ohtTai7AiN8')
+    
+    if result:
+        print(json.dumps(result, indent=4))
