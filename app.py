@@ -16,21 +16,7 @@ API_ENDPOINTS = {
     "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
     "youtube-dearrow": "https://sponsor.ajay.app/api/branding?videoID={ytid}",
     # "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoID={ytid}"
-    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium",
-    "youtube-operational-id": "https://yt.lemnoslife.com/videos?id={ytid}&part=id",
-    "youtube-operational-status": "https://yt.lemnoslife.com/videos?id={ytid}&part=status",
-    "youtube-operational-contentDetails": "https://yt.lemnoslife.com/videos?id={ytid}&part=contentDetails",
-    "youtube-operational-music": "https://yt.lemnoslife.com/videos?id={ytid}&part=music",
-    "youtube-operational-short": "https://yt.lemnoslife.com/videos?id={ytid}&part=short",
-    "youtube-operational-musics": "https://yt.lemnoslife.com/videos?id={ytid}&part=musics",
-    "youtube-operational-mostReplayed": "https://yt.lemnoslife.com/videos?id={ytid}&part=mostReplayed",
-    "youtube-operational-qualities": "https://yt.lemnoslife.com/videos?id={ytid}&part=qualities",
-    "youtube-operational-chapters": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
-    "youtube-operational-snippet": "https://yt.lemnoslife.com/videos?id={ytid}&part=snippet",
-    "youtube-operational-clip": "https://yt.lemnoslife.com/videos?id={ytid}&part=clip",
-    "youtube-operational-activity": "https://yt.lemnoslife.com/videos?id={ytid}&part=activity",
-    "youtube-operational-explicitLyrics": "https://yt.lemnoslife.com/videos?id={ytid}&part=explicitLyrics",
-    "youtube-operational-statistics": "https://yt.lemnoslife.com/videos?id={ytid}&part=statistics",
+    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
 }
 
 class Cache:
@@ -76,9 +62,10 @@ def fetch_data(url, yt_video_id: str):
         # String format the videoId into the API URL
         url = url.format(ytid=yt_video_id)
         app.logger.info(f"Fetching {url}", extra={'flush': True})
+        start_time = time.time()
         response = requests.get(url)
         response.raise_for_status()
-        app.logger.info(f"Got {url}", extra={'flush': True})
+        app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={'flush': True})
         return response.json()
     except Exception as e:
         app.logger.error(f"Error fetching {url}: {str(e)}", extra={'flush': True})
