@@ -1,15 +1,40 @@
 import time, json, requests, threading
-
 from flask import Flask, request, jsonify
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# ... (rest of the imports remain unchanged)
 
 # Hardcoded list of API endpoints
 API_ENDPOINTS = {
-    "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=statistics&id={ytid}",
+    "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
     "youtube-dislike": "https://returnyoutubedislikeapi.com/votes?videoId={ytid}",
     "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
     "youtube-dearrow": "https://sponsor.ajay.app/api/branding?videoID={ytid}",
-    "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoId={ytid}"
+    # "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoID={ytid}"
+    "youtube-operational-id": "https://yt.lemnoslife.com/videos?id={ytid}&part=id",
+    "youtube-operational-status": "https://yt.lemnoslife.com/videos?id={ytid}&part=status",
+    "youtube-operational-contentDetails": "https://yt.lemnoslife.com/videos?id={ytid}&part=contentDetails",
+    "youtube-operational-music": "https://yt.lemnoslife.com/videos?id={ytid}&part=music",
+    "youtube-operational-short": "https://yt.lemnoslife.com/videos?id={ytid}&part=short",
+    "youtube-operational-musics": "https://yt.lemnoslife.com/videos?id={ytid}&part=musics",
+    "youtube-operational-isPaidPromotion": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion",
+    "youtube-operational-isPremium": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPremium",
+    "youtube-operational-isMemberOnly": "https://yt.lemnoslife.com/videos?id={ytid}&part=isMemberOnly",
+    "youtube-operational-mostReplayed": "https://yt.lemnoslife.com/videos?id={ytid}&part=mostReplayed",
+    "youtube-operational-qualities": "https://yt.lemnoslife.com/videos?id={ytid}&part=qualities",
+    "youtube-operational-chapters": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
+    "youtube-operational-isOriginal": "https://yt.lemnoslife.com/videos?id={ytid}&part=isOriginal",
+    "youtube-operational-isRestricted": "https://yt.lemnoslife.com/videos?id={ytid}&part=isRestricted",
+    "youtube-operational-snippet": "https://yt.lemnoslife.com/videos?id={ytid}&part=snippet",
+    "youtube-operational-clip": "https://yt.lemnoslife.com/videos?id={ytid}&part=clip",
+    "youtube-operational-activity": "https://yt.lemnoslife.com/videos?id={ytid}&part=activity",
+    "youtube-operational-explicitLyrics": "https://yt.lemnoslife.com/videos?id={ytid}&part=explicitLyrics",
+    "youtube-operational-statistics": "https://yt.lemnoslife.com/videos?id={ytid}&part=statistics",
 }
 
 class Cache:
@@ -36,13 +61,7 @@ class Cache:
                 del self.data[key]
 
     def clean_old_entries(self):
-        now = time.time()
-        keys_to_delete = []
-        for key, (value, timestamp) in self.data.items():
-            if now - timestamp >= self.max_age:
-                keys_to_delete.append(key)
-        for key in keys_to_delete:
-            del self.data[key]
+        self.data = {}
 
     def run_cleanup_thread(self):
         def cleanup_loop():
@@ -60,16 +79,14 @@ def fetch_data(url, yt_video_id: str):
     try:
         # String format the videoId into the API URL
         url = url.format(ytid=yt_video_id)
-        print("Fetching", url, flush=True)
+        app.logger.info(f"Fetching {url}", extra={'flush': True})
         response = requests.get(url)
         response.raise_for_status()
-        print("Got", url, flush=True)
+        app.logger.info(f"Got {url}", extra={'flush': True})
         return response.json()
     except Exception as e:
-        print(f"Error fetching {url}: {str(e)}")
+        app.logger.error(f"Error fetching {url}: {str(e)}", extra={'flush': True})
         return None
-
-
 
 cache = Cache()
 cache.run_cleanup_thread()
@@ -89,7 +106,7 @@ def combine_responses():
 
     # Check cache first
     if yt_video_id in cache.data:
-        print(f"Cached response found for {yt_video_id}", flush=True)
+        app.logger.info(f"Cached response found for {yt_video_id}", flush=True)
         combined_response["time"] = time.time() - start_time
         combined_response.update(cache.data.get(yt_video_id))
         return jsonify(combined_response)
@@ -99,13 +116,13 @@ def combine_responses():
         future_to_url = {executor.submit(fetch_data, url, yt_video_id): (name, url) for (name, url) in API_ENDPOINTS.items()}
         
         for future in as_completed(future_to_url):
-            endpoint = future_to_url[future]
+            name, url = future_to_url[future]
             try:
                 result = future.result()
                 if result:
-                    combined_response[endpoint] = result
+                    combined_response[name] = result
             except Exception as exc:
-                print(f"Fetching {endpoint} generated an exception: {exc}", flush=True)
+                app.logger.error(f"Fetching {url} generated an exception: {exc}", flush=True)
 
     # Calculate the total execution time
     combined_response["time"] = time.time() - start_time
