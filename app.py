@@ -1,14 +1,18 @@
-import time, json, requests, threading
+from decimal import ExtendedContext
+import time, json, requests, threading, logging, re
+from typing import Any, Optional
 from flask import Flask, request, jsonify
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
+from subtitles import YouTubeTranscriptDownloader
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# ... (rest of the imports remain unchanged)
+transcript = YouTubeTranscriptDownloader()
 
+PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
 # Hardcoded list of API endpoints
 API_ENDPOINTS = {
     "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
@@ -16,10 +20,12 @@ API_ENDPOINTS = {
     "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
     "youtube-dearrow": "https://sponsor.ajay.app/api/branding?videoID={ytid}",
     # "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoID={ytid}"
-    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
+    # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
+    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
 }
 
 class Cache:
+    data: dict[str,object] = {}
     def __init__(self, max_age=600):  # 10 minutes default
         self.data = {}
         self.max_age = max_age
@@ -28,14 +34,12 @@ class Cache:
     def get(self, key):
         with self.lock:
             if key in self.data:
-                value, timestamp = self.data[key]
-                if time.time() - timestamp < self.max_age:
-                    return value
+                return self.data.get(key)
             return None
 
     def set(self, key, value):
         with self.lock:
-            self.data[key] = (value, time.time())
+            self.data[key] = value
 
     def delete(self, key):
         with self.lock:
@@ -55,9 +59,35 @@ class Cache:
         cleanup_thread.daemon = True
         cleanup_thread.start()
 
-def is_youtube_video_id(id: str): return id # and len(id) == 11 and id.startswith(('3', '9'))
+class CustomOperationThread(threading.Thread):
+    def __init__(self, func, *args, **kwargs):
+        super().__init__()
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.result = None
+        self.exception = None
 
-def fetch_data(url, yt_video_id: str):
+    def run(self):
+        try:
+            self.result = self.func(*self.args, **self.kwargs)
+        except Exception as e:
+            self.exception = e
+
+    def join(self, timeout=None):
+        super().join(timeout)
+        if self.exception:
+            raise self.exception
+
+@staticmethod
+def is_youtube_video_id(id: str):
+    return id and bool(re.match(r'^[a-zA-Z0-9_-]{11}$', id, re.IGNORECASE))
+
+@staticmethod
+def is_pietsmiet_video_id(id: str):
+    return id and id.isdigit()
+
+def fetch_data(url, yt_video_id: str) -> dict[str, Any]:
     try:
         # String format the videoId into the API URL
         url = url.format(ytid=yt_video_id)
@@ -80,19 +110,28 @@ def combine_responses():
     start_time = time.time()
 
     # Get the YouTube video ID from the request body
-    yt_video_id = request.args.get('videoId')
+    yt_video_id = request.args.get('videoId') or ""
 
     # Validate the video ID
-    if not is_youtube_video_id(yt_video_id): return jsonify({"error": "missing or invalid 'videoId'"}), 400
+    if not is_youtube_video_id(yt_video_id):
+        if is_pietsmiet_video_id(yt_video_id):
+            res: dict[str, Any] = fetch_data(PSDE_API_URL, yt_video_id)
+            yt_video_id = res["secondaryHref"].split('/')[-1]
+        else:
+            app.logger.error(f"VideoId \"{yt_video_id}\" is neither youtube nor pietsmiet")
+            return jsonify({"error": "missing or invalid 'videoId' (supports youtube and pietsmiet.de)"}), 400
 
     combined_response = {} # Create a dictionary to store the fetched data
 
     # Check cache first
     if yt_video_id in cache.data:
-        app.logger.info(f"Cached response found for {yt_video_id}", flush=True)
-        combined_response["time"] = time.time() - start_time
+        app.logger.info(f"Cached response found for {yt_video_id}")
         combined_response.update(cache.data.get(yt_video_id))
+        combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
+
+    # custom_thread = CustomOperationThread(custom_operation)
+    # custom_thread.start()
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
@@ -104,8 +143,12 @@ def combine_responses():
                 result = future.result()
                 if result:
                     combined_response[name] = result
-            except Exception as exc:
-                app.logger.error(f"Fetching {url} generated an exception: {exc}", flush=True)
+            except Exception as ex:
+                app.logger.error(f"Fetching {url} generated an exception: {ex}")
+
+    try: combined_response["youtube-transcript"] = transcript.get(yt_video_id)
+    except Exception as ex: app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")
+    # custom_thread.join()
 
     # Calculate the total execution time
     combined_response["time"] = time.time() - start_time

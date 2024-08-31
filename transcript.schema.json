@@ -1,0 +1,572 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/TranscriptResponse",
+    "definitions": {
+        "TranscriptResponse": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "responseContext": {
+                    "$ref": "#/definitions/ResponseContext"
+                },
+                "actions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Action"
+                    }
+                },
+                "trackingParams": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "TranscriptResponse"
+        },
+        "Action": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "clickTrackingParams": {
+                    "type": "string"
+                },
+                "updateEngagementPanelAction": {
+                    "$ref": "#/definitions/UpdateEngagementPanelAction"
+                }
+            },
+            "required": [],
+            "title": "Action"
+        },
+        "UpdateEngagementPanelAction": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "targetId": {
+                    "type": "string"
+                },
+                "content": {
+                    "$ref": "#/definitions/UpdateEngagementPanelActionContent"
+                }
+            },
+            "required": [],
+            "title": "UpdateEngagementPanelAction"
+        },
+        "UpdateEngagementPanelActionContent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transcriptRenderer": {
+                    "$ref": "#/definitions/TranscriptRenderer"
+                }
+            },
+            "required": [],
+            "title": "UpdateEngagementPanelActionContent"
+        },
+        "TranscriptRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "trackingParams": {
+                    "type": "string"
+                },
+                "content": {
+                    "$ref": "#/definitions/TranscriptRendererContent"
+                }
+            },
+            "required": [],
+            "title": "TranscriptRenderer"
+        },
+        "TranscriptRendererContent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transcriptSearchPanelRenderer": {
+                    "$ref": "#/definitions/TranscriptSearchPanelRenderer"
+                }
+            },
+            "required": [],
+            "title": "TranscriptRendererContent"
+        },
+        "TranscriptSearchPanelRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "header": {
+                    "$ref": "#/definitions/Header"
+                },
+                "body": {
+                    "$ref": "#/definitions/Body"
+                },
+                "footer": {
+                    "$ref": "#/definitions/Footer"
+                },
+                "trackingParams": {
+                    "type": "string"
+                },
+                "targetId": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "TranscriptSearchPanelRenderer"
+        },
+        "Body": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transcriptSegmentListRenderer": {
+                    "$ref": "#/definitions/TranscriptSegmentListRenderer"
+                }
+            },
+            "required": [],
+            "title": "Body"
+        },
+        "TranscriptSegmentListRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "initialSegments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/InitialSegment"
+                    }
+                },
+                "noResultLabel": {
+                    "$ref": "#/definitions/NoResultLabel"
+                },
+                "retryLabel": {
+                    "$ref": "#/definitions/NoResultLabel"
+                },
+                "touchCaptionsEnabled": {
+                    "type": "boolean"
+                }
+            },
+            "required": [],
+            "title": "TranscriptSegmentListRenderer"
+        },
+        "InitialSegment": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transcriptSegmentRenderer": {
+                    "$ref": "#/definitions/TranscriptSegmentRenderer"
+                }
+            },
+            "required": [],
+            "title": "InitialSegment"
+        },
+        "TranscriptSegmentRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "startMs": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "endMs": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "snippet": {
+                    "$ref": "#/definitions/NoResultLabel"
+                },
+                "startTimeText": {
+                    "$ref": "#/definitions/StartTimeText"
+                },
+                "trackingParams": {
+                    "type": "string"
+                },
+                "accessibility": {
+                    "$ref": "#/definitions/Accessibility"
+                },
+                "targetId": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "TranscriptSegmentRenderer"
+        },
+        "Accessibility": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "accessibilityData": {
+                    "$ref": "#/definitions/AccessibilityData"
+                }
+            },
+            "required": [],
+            "title": "Accessibility"
+        },
+        "AccessibilityData": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "label": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "AccessibilityData"
+        },
+        "NoResultLabel": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "runs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Run"
+                    }
+                }
+            },
+            "required": [],
+            "title": "NoResultLabel"
+        },
+        "Run": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "text": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "Run"
+        },
+        "StartTimeText": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "simpleText": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "StartTimeText"
+        },
+        "Footer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transcriptFooterRenderer": {
+                    "$ref": "#/definitions/TranscriptFooterRenderer"
+                }
+            },
+            "required": [],
+            "title": "Footer"
+        },
+        "TranscriptFooterRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "languageMenu": {
+                    "$ref": "#/definitions/LanguageMenu"
+                }
+            },
+            "required": [],
+            "title": "TranscriptFooterRenderer"
+        },
+        "LanguageMenu": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "sortFilterSubMenuRenderer": {
+                    "$ref": "#/definitions/SortFilterSubMenuRenderer"
+                }
+            },
+            "required": [],
+            "title": "LanguageMenu"
+        },
+        "SortFilterSubMenuRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "subMenuItems": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SubMenuItem"
+                    }
+                },
+                "trackingParams": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "SortFilterSubMenuRenderer"
+        },
+        "SubMenuItem": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "selected": {
+                    "type": "boolean"
+                },
+                "continuation": {
+                    "$ref": "#/definitions/Continuation"
+                },
+                "trackingParams": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "SubMenuItem"
+        },
+        "Continuation": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "reloadContinuationData": {
+                    "$ref": "#/definitions/ReloadContinuationData"
+                }
+            },
+            "required": [],
+            "title": "Continuation"
+        },
+        "ReloadContinuationData": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "continuation": {
+                    "type": "string"
+                },
+                "clickTrackingParams": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "ReloadContinuationData"
+        },
+        "Header": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transcriptSearchBoxRenderer": {
+                    "$ref": "#/definitions/TranscriptSearchBoxRenderer"
+                }
+            },
+            "required": [],
+            "title": "Header"
+        },
+        "TranscriptSearchBoxRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "formattedPlaceholder": {
+                    "$ref": "#/definitions/NoResultLabel"
+                },
+                "accessibility": {
+                    "$ref": "#/definitions/Accessibility"
+                },
+                "clearButton": {
+                    "$ref": "#/definitions/ClearButton"
+                },
+                "onTextChangeCommand": {
+                    "$ref": "#/definitions/OnTextChangeCommand"
+                },
+                "trackingParams": {
+                    "type": "string"
+                },
+                "searchButton": {
+                    "$ref": "#/definitions/SearchButton"
+                }
+            },
+            "required": [],
+            "title": "TranscriptSearchBoxRenderer"
+        },
+        "ClearButton": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "buttonRenderer": {
+                    "$ref": "#/definitions/ClearButtonButtonRenderer"
+                }
+            },
+            "required": [],
+            "title": "ClearButton"
+        },
+        "ClearButtonButtonRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "icon": {
+                    "$ref": "#/definitions/Icon"
+                },
+                "trackingParams": {
+                    "type": "string"
+                },
+                "accessibilityData": {
+                    "$ref": "#/definitions/Accessibility"
+                }
+            },
+            "required": [],
+            "title": "ClearButtonButtonRenderer"
+        },
+        "Icon": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "iconType": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "Icon"
+        },
+        "OnTextChangeCommand": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "clickTrackingParams": {
+                    "type": "string"
+                },
+                "commandMetadata": {
+                    "$ref": "#/definitions/CommandMetadata"
+                },
+                "getTranscriptEndpoint": {
+                    "$ref": "#/definitions/GetTranscriptEndpoint"
+                }
+            },
+            "required": [],
+            "title": "OnTextChangeCommand"
+        },
+        "CommandMetadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "webCommandMetadata": {
+                    "$ref": "#/definitions/WebCommandMetadata"
+                }
+            },
+            "required": [],
+            "title": "CommandMetadata"
+        },
+        "WebCommandMetadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "sendPost": {
+                    "type": "boolean"
+                },
+                "apiUrl": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "WebCommandMetadata"
+        },
+        "GetTranscriptEndpoint": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "params": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "GetTranscriptEndpoint"
+        },
+        "SearchButton": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "buttonRenderer": {
+                    "$ref": "#/definitions/SearchButtonButtonRenderer"
+                }
+            },
+            "required": [],
+            "title": "SearchButton"
+        },
+        "SearchButtonButtonRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "trackingParams": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "SearchButtonButtonRenderer"
+        },
+        "ResponseContext": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "visitorData": {
+                    "type": "string"
+                },
+                "serviceTrackingParams": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ServiceTrackingParam"
+                    }
+                },
+                "mainAppWebResponseContext": {
+                    "$ref": "#/definitions/MainAppWebResponseContext"
+                },
+                "webResponseContextExtensionData": {
+                    "$ref": "#/definitions/WebResponseContextExtensionData"
+                }
+            },
+            "required": [],
+            "title": "ResponseContext"
+        },
+        "MainAppWebResponseContext": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "loggedOut": {
+                    "type": "boolean"
+                },
+                "trackingParam": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "MainAppWebResponseContext"
+        },
+        "ServiceTrackingParam": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "service": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Param"
+                    }
+                }
+            },
+            "required": [],
+            "title": "ServiceTrackingParam"
+        },
+        "Param": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "Param"
+        },
+        "WebResponseContextExtensionData": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "hasDecorated": {
+                    "type": "boolean"
+                }
+            },
+            "required": [],
+            "title": "WebResponseContextExtensionData"
+        }
+    }
+}
