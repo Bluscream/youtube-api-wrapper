@@ -3,16 +3,19 @@ import time, json, requests, threading, logging, re
 from typing import Any, Optional
 from flask import Flask, request, jsonify
 from concurrent.futures import ThreadPoolExecutor, as_completed
-# from subtitles import YouTubeTranscriptDownloader
-from youtube_transcript_api import YouTubeTranscriptApi, Transcript
-from youtube_transcript_api.formatters import TextFormatter, JSONFormatter, WebVTTFormatter, SRTFormatter, Formatter
-from youtube_transcript_api._errors import NoTranscriptFound
+from datetime import datetime
+from subtitles import YouTubeTranscriptDownloader
+
+APP_NAME = "youtube-api-wrapper"
+APP_BUILD = 1
+APP_AUTHOR = "Bluscream"
+APP_SOURCE_URL = "https://github.com/Bluscream/youtube-api-wrapper"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# transcript = YouTubeTranscriptDownloader()
+transcript = YouTubeTranscriptDownloader()
 
 PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
 # Hardcoded list of API endpoints
@@ -25,6 +28,35 @@ API_ENDPOINTS = {
     # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
     "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
 }
+DEFAULT_TASKS = ["youtube-data","youtube-dislike","youtube-sponsorblock","youtube-dearrow","youtube-subtitles","youtube-operational"]
+DOCS = {
+    "docs": {
+        "query": {
+            "params": {
+                "fresh": {
+                    "type": "bool",
+                    "default": False,
+                    "description": "Invalidates the cache so a fresh result is returned"
+                },
+                "youtube-subtitles": {
+                    "type": "bool",
+                    "description": "Returns available subtitles for the given youtube video"
+                }
+            }
+        },
+        "default_tasks": DEFAULT_TASKS
+    },
+    "description": f"{APP_NAME} v{APP_BUILD} is written by {APP_AUTHOR} and open-sourced at {APP_SOURCE_URL}",
+    "time": datetime.now()
+}
+for name, url in API_ENDPOINTS.items():
+    DOCS["docs"]["query"]["params"][name] = {
+        "type": "bool",
+        "default": False,
+        "description": f"Returns the response from {url}"
+    }
+for name in DEFAULT_TASKS:
+    DOCS["docs"]["query"]["params"][name]["default"] = True
 
 class AppCache:
     data: dict[str,object] = {}
@@ -114,6 +146,7 @@ def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
 def get_transcripts(yt_video_id: str, langs: list[str]):
     ret = {}
     start_time = time.time()
+    
     print("Got", len(ret),"transcripts in",time.time() - start_time,"seconds")
     return ret
 
@@ -122,12 +155,15 @@ cache.run_cleanup_thread()
 
 app = Flask(__name__)
 @app.route("/", methods=["GET"])
-def combine_responses():
+def get_main():
+    
     start_time = time.time()
+    
+    # full_info = request.args.get("fullInfo", default=False, type=bool)
 
     # Get the YouTube video ID from the request body
-    yt_video_id = request.args.get("videoId", "")
-    fresh = request.args.get("fresh", False)
+    yt_video_id = request.args.get("videoId", "", str)
+    fresh = request.args.get("fresh", False, bool)
 
     # Validate the video ID
     if not is_youtube_video_id(yt_video_id):
@@ -135,11 +171,11 @@ def combine_responses():
             res: dict[str, Any] | None = fetch_data(PSDE_API_URL, yt_video_id)
             if not res:
                 app.logger.error(f"pietsmiet.de VideoId \"{yt_video_id}\" can not resolve to youtube video!")
-                return jsonify({"error": "cannot resolve "videoId""}), 400
+                return jsonify({"error": "cannot resolve 'videoId'"}), 400
             yt_video_id = res["secondaryHref"].split("/")[-1]
         else:
             app.logger.error(f"VideoId \"{yt_video_id}\" is neither youtube nor pietsmiet")
-            return jsonify({"error": "missing or invalid "videoId" (supports youtube and pietsmiet.de)"}), 400
+            return jsonify({"error": "missing or invalid 'videoId' (supports youtube and pietsmiet.de)"}), 400
 
     combined_response = {} # Create a dictionary to store the fetched data
 
@@ -150,7 +186,7 @@ def combine_responses():
         combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
 
-    transcripts_task = tasks.start(get_transcripts, "get_transcripts", yt_video_id, ["en"]) # todo: langs
+    tasks.start(get_transcripts, "get_transcripts", yt_video_id, ["en"]) # todo: langs
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
@@ -165,7 +201,7 @@ def combine_responses():
             except Exception as ex:
                 app.logger.error(f"Fetching {url} generated an exception: {ex}")
 
-    try: combined_response["youtube-transcript"] = tasks.wait()
+    try: combined_response["youtube-transcripts"] = tasks.wait()
     except Exception as ex:
         app.logger.exception(ex)
         app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")
@@ -181,6 +217,11 @@ def combine_responses():
     cache.data[yt_video_id] = combined_response
 
     return jsonify(combined_response)
+
+@app.route("/about", methods=["GET"])
+@app.route("/docs", methods=["GET"])
+def get_about():
+    return jsonify(DOCS)
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=7077)
