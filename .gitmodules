@@ -1,0 +1,4 @@
+[submodule "flask-youtube-transcript-wrapper"]
+	path = flask-youtube-transcript-wrapper
+	url = https://github.com/Bluscream/flask-youtube-transcript-wrapper
+	branch = main
