@@ -1,6 +1,6 @@
 # pip install requests bbpb
 import base64, json
-import requests, blackboxprotobuf, bbpb
+import requests, blackboxprotobuf
 from typing import Dict, Any
 
 class YouTubeTranscriptDownloader:
