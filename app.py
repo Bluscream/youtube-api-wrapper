@@ -3,14 +3,16 @@ import time, json, requests, threading, logging, re
 from typing import Any, Optional
 from flask import Flask, request, jsonify
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from subtitles import YouTubeTranscriptDownloader
-
+# from subtitles import YouTubeTranscriptDownloader
+from youtube_transcript_api import YouTubeTranscriptApi, Transcript
+from youtube_transcript_api.formatters import TextFormatter, JSONFormatter, WebVTTFormatter, SRTFormatter, Formatter
+from youtube_transcript_api._errors import NoTranscriptFound
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-transcript = YouTubeTranscriptDownloader()
+# transcript = YouTubeTranscriptDownloader()
 
 PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
 # Hardcoded list of API endpoints
@@ -24,8 +26,9 @@ API_ENDPOINTS = {
     "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
 }
 
-class Cache:
+class AppCache:
     data: dict[str,object] = {}
+
     def __init__(self, max_age=600):  # 10 minutes default
         self.data = {}
         self.max_age = max_age
@@ -59,25 +62,6 @@ class Cache:
         cleanup_thread.daemon = True
         cleanup_thread.start()
 
-    def __init__(self, func, *args, **kwargs):
-        super().__init__()
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-        self.result = None
-        self.exception = None
-
-    def run(self):
-        try:
-            self.result = self.func(*self.args, **self.kwargs)
-        except Exception as e:
-            self.exception = e
-
-    def join(self, timeout=None):
-        super().join(timeout)
-        if self.exception:
-            raise self.exception
-
 class BackgroundTaskManager:
     def __init__(self):
         self.event = threading.Event()
@@ -99,7 +83,7 @@ class BackgroundTaskManager:
 
     def wait(self):
         self.event.wait()
-        if self.exception: raise self.exception
+        if self.exception: raise self.exception # type: ignore
         return self.result
 
 tasks = BackgroundTaskManager()
@@ -126,9 +110,13 @@ def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
         app.logger.error(f"Error fetching {url}: {str(e)}", extra={'flush': True})
         return None
 
-def get_transcripts(url: str, yt_video_id: str, )
+def get_transcripts(yt_video_id: str, langs: list[str]):
+    ret = {}
+    start_time = time.time()
+    print("Got", len(ret),"transcripts in",time.time() - start_time,"seconds")
+    return ret
 
-cache = Cache()
+cache = AppCache()
 cache.run_cleanup_thread()
 
 app = Flask(__name__)
@@ -157,11 +145,11 @@ def combine_responses():
     # Check cache first
     if not fresh and yt_video_id in cache.data:
         app.logger.info(f"Cached response found for {yt_video_id}")
-        combined_response.update(cache.data.get(yt_video_id))
+        combined_response.update(cache.data.get(yt_video_id)) # type: ignore
         combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
 
-    get_transcripts = tasks.start(example_task, "Background Task")
+    transcripts_task = tasks.start(get_transcripts, "get_transcripts")
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
@@ -176,7 +164,7 @@ def combine_responses():
             except Exception as ex:
                 app.logger.error(f"Fetching {url} generated an exception: {ex}")
 
-    try: combined_response["youtube-transcript"] = transcript.get(yt_video_id)
+    try: combined_response["youtube-transcript"] = tasks.wait()
     except Exception as ex:
         app.logger.exception(ex)
         app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")

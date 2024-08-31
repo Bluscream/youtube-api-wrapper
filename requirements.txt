@@ -2,3 +2,4 @@ Flask
 requests
 blackboxprotobuf
 bbpb
+youtube_transcript_api
