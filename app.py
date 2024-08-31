@@ -83,7 +83,8 @@ class BackgroundTaskManager:
 
     def wait(self):
         self.event.wait()
-        if self.exception: raise self.exception # type: ignore
+        if self.exception:
+            raise self.exception # type: ignore
         return self.result
 
 tasks = BackgroundTaskManager()
@@ -149,7 +150,7 @@ def combine_responses():
         combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
 
-    transcripts_task = tasks.start(get_transcripts, "get_transcripts")
+    transcripts_task = tasks.start(get_transcripts, "get_transcripts", yt_video_id, ["en"]) # todo: langs
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
