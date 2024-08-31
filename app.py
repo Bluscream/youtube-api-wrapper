@@ -11,27 +11,14 @@ logger = logging.getLogger(__name__)
 
 transcript = YouTubeTranscriptDownloader()
 
-def getJson(url_template: str, **kwargs: dict[str, Any]) -> dict[str, Any] | None:
-    try:
-        # String format the videoId into the API URL
-        url = url_template.format(**kwargs)
-        app.logger.info(f"Fetching {url}", extra={'flush': True})
-        start_time = time.time()
-        response = requests.get(url)
-        response.raise_for_status()
-        app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={'flush': True})
-        return response.json()
-    except Exception as e:
-        app.logger.error(f"Error fetching {url_template}: {str(e)}", extra={'flush': True})
-        return None
+PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
 
-# Define the TASKS dictionary
 TASKS = {
-    "youtube-data": getJson("https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}"),
-    "youtube-dislike": getJson("https://returnyoutubedislikeapi.com/votes?videoId={ytid}"),
-    "youtube-sponsorblock": getJson("https://sponsor.ajay.app/api/skipSegments?videoID={ytid}"),
-    "youtube-dearrow": getJson("https://sponsor.ajay.app/api/branding?videoID={ytid}"),
-    "youtube-operational": getJson("https://yt.lemnoslife.com/videos?id={ytid}&part=chapters"),
+    "youtube-data": (getJson, "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}"),
+    "youtube-dislike": (getJson, "https://returnyoutubedislikeapi.com/votes?videoId={ytid}"),
+    "youtube-sponsorblock": (getJson, "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}"),
+    "youtube-dearrow": (getJson, "https://sponsor.ajay.app/api/branding?videoID={ytid}"),
+    "youtube-operational": (getJson, "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters"),
 }
 
 class Cache:
@@ -97,10 +84,9 @@ def is_youtube_video_id(id: str):
 def is_pietsmiet_video_id(id: str):
     return id and id.isdigit()
 
-def fetch_data(url_template: str, yt_video_id: str) -> dict[str, Any]:
+def getJson(url_template: str, **kwargs: dict[str, Any]) -> dict[str, Any] | None:
     try:
-        # String format the videoId into the API URL
-        url = url_template.format(ytid=yt_video_id)
+        url = url_template.format(**kwargs)
         app.logger.info(f"Fetching {url}", extra={'flush': True})
         start_time = time.time()
         response = requests.get(url)
@@ -143,18 +129,18 @@ def combine_responses():
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(TASKS)) as executor:
-        future_to_url = {executor.submit(fetch_data, url_template, yt_video_id): (name, url_template) for (name, url_template) in TASKS.items()}
+        future_to_task = {executor.submit(url_template=getJson, *task): task for task in TASKS.values()}
         
-        for future in as_completed(future_to_url):
-            name, url_template = future_to_url[future]
+        for future in as_completed(future_to_task):
+            name, url_template = next(iter(future_to_task[future]))
             try:
                 result = future.result()
                 if result:
                     combined_response[name] = result
             except Exception as ex:
-                app.logger.error(f"Fetched {name} generated an exception: {ex}")
+                app.logger.error(f"Fetching {url_template} generated an exception: {ex}")
 
-    try:
+    try: 
         combined_response["youtube-transcript"] = transcript.get(yt_video_id)
     except Exception as ex:
         app.logger.exception(ex)
