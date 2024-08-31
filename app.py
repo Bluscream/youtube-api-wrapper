@@ -110,7 +110,8 @@ def combine_responses():
     start_time = time.time()
 
     # Get the YouTube video ID from the request body
-    yt_video_id = request.args.get('videoId') or ""
+    yt_video_id = request.args.get('videoId', "")
+    fresh = request.args.get('fresh', False)
 
     # Validate the video ID
     if not is_youtube_video_id(yt_video_id):
@@ -124,7 +125,7 @@ def combine_responses():
     combined_response = {} # Create a dictionary to store the fetched data
 
     # Check cache first
-    if yt_video_id in cache.data:
+    if not fresh and yt_video_id in cache.data:
         app.logger.info(f"Cached response found for {yt_video_id}")
         combined_response.update(cache.data.get(yt_video_id))
         combined_response["time"] = time.time() - start_time
