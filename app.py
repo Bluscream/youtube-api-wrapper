@@ -9,7 +9,7 @@ from youtube_transcript_api.formatters import TextFormatter, JSONFormatter, WebV
 from youtube_transcript_api._errors import NoTranscriptFound
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # transcript = YouTubeTranscriptDownloader()
@@ -91,7 +91,7 @@ tasks = BackgroundTaskManager()
 
 @staticmethod
 def is_youtube_video_id(video_id: str):
-    return video_id and bool(re.match(r'^[a-zA-Z0-9_-]{11}$', video_id, re.IGNORECASE))
+    return video_id and bool(re.match(r"^[a-zA-Z0-9_-]{11}$", video_id, re.IGNORECASE))
 
 @staticmethod
 def is_pietsmiet_video_id(video_id: str):
@@ -101,14 +101,14 @@ def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
     try:
         # String format the videoId into the API URL
         url = url.format(ytid=yt_video_id)
-        app.logger.info(f"Fetching {url}", extra={'flush': True})
+        app.logger.info(f"Fetching {url}", extra={"flush": True})
         start_time = time.time()
         response = requests.get(url)
         response.raise_for_status()
-        app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={'flush': True})
+        app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={"flush": True})
         return response.json()
     except Exception as e:
-        app.logger.error(f"Error fetching {url}: {str(e)}", extra={'flush': True})
+        app.logger.error(f"Error fetching {url}: {str(e)}", extra={"flush": True})
         return None
 
 def get_transcripts(yt_video_id: str, langs: list[str]):
@@ -121,13 +121,13 @@ cache = AppCache()
 cache.run_cleanup_thread()
 
 app = Flask(__name__)
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def combine_responses():
     start_time = time.time()
 
     # Get the YouTube video ID from the request body
-    yt_video_id = request.args.get('videoId', "")
-    fresh = request.args.get('fresh', False)
+    yt_video_id = request.args.get("videoId", "")
+    fresh = request.args.get("fresh", False)
 
     # Validate the video ID
     if not is_youtube_video_id(yt_video_id):
@@ -135,11 +135,11 @@ def combine_responses():
             res: dict[str, Any] | None = fetch_data(PSDE_API_URL, yt_video_id)
             if not res:
                 app.logger.error(f"pietsmiet.de VideoId \"{yt_video_id}\" can not resolve to youtube video!")
-                return jsonify({"error": "cannot resolve 'videoId'"}), 400
-            yt_video_id = res["secondaryHref"].split('/')[-1]
+                return jsonify({"error": "cannot resolve "videoId""}), 400
+            yt_video_id = res["secondaryHref"].split("/")[-1]
         else:
             app.logger.error(f"VideoId \"{yt_video_id}\" is neither youtube nor pietsmiet")
-            return jsonify({"error": "missing or invalid 'videoId' (supports youtube and pietsmiet.de)"}), 400
+            return jsonify({"error": "missing or invalid "videoId" (supports youtube and pietsmiet.de)"}), 400
 
     combined_response = {} # Create a dictionary to store the fetched data
 
@@ -182,5 +182,5 @@ def combine_responses():
 
     return jsonify(combined_response)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=7077)
