@@ -1,6 +1,6 @@
 # pip install requests bbpb
 import base64, json
-import requests, blackboxprotobuf
+import requests, blackboxprotobuf, bbpb
 from typing import Dict, Any
 
 class YouTubeTranscriptDownloader:
@@ -44,8 +44,6 @@ class YouTubeTranscriptDownloader:
         """
         lang_dict = { '1': 'asr', '2': lang} if automatic else { '2': lang}
         lang_type = { '1': { 'type': 'string' },'2': { 'type': 'string' } } if automatic else { '2': { 'type': 'string' } }
-        print(lang_dict)
-        print(lang_type)
         message = {
             '1': videoId,
             '2': YouTubeTranscriptDownloader.encode_protobuf(lang_dict, lang_type),

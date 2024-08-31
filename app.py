@@ -148,7 +148,9 @@ def combine_responses():
                 app.logger.error(f"Fetching {url} generated an exception: {ex}")
 
     try: combined_response["youtube-transcript"] = transcript.get(yt_video_id)
-    except Exception as ex: app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")
+    except Exception as ex:
+        app.logger.exception(ex)
+        app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")
     # custom_thread.join()
 
     # Calculate the total execution time
