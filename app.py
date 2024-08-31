@@ -5,27 +5,37 @@ from flask import Flask, request, jsonify
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from subtitles import YouTubeTranscriptDownloader
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 transcript = YouTubeTranscriptDownloader()
 
-PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
-# Hardcoded list of API endpoints
-API_ENDPOINTS = {
-    "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
-    "youtube-dislike": "https://returnyoutubedislikeapi.com/votes?videoId={ytid}",
-    "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
-    "youtube-dearrow": "https://sponsor.ajay.app/api/branding?videoID={ytid}",
-    # "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoID={ytid}"
-    # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
-    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
+def getJson(url_template: str, **kwargs: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        # String format the videoId into the API URL
+        url = url_template.format(**kwargs)
+        app.logger.info(f"Fetching {url}", extra={'flush': True})
+        start_time = time.time()
+        response = requests.get(url)
+        response.raise_for_status()
+        app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={'flush': True})
+        return response.json()
+    except Exception as e:
+        app.logger.error(f"Error fetching {url_template}: {str(e)}", extra={'flush': True})
+        return None
+
+# Define the TASKS dictionary
+TASKS = {
+    "youtube-data": getJson("https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}"),
+    "youtube-dislike": getJson("https://returnyoutubedislikeapi.com/votes?videoId={ytid}"),
+    "youtube-sponsorblock": getJson("https://sponsor.ajay.app/api/skipSegments?videoID={ytid}"),
+    "youtube-dearrow": getJson("https://sponsor.ajay.app/api/branding?videoID={ytid}"),
+    "youtube-operational": getJson("https://yt.lemnoslife.com/videos?id={ytid}&part=chapters"),
 }
 
 class Cache:
-    data: dict[str,object] = {}
+    data: dict[str, object] = {}
     def __init__(self, max_age=600):  # 10 minutes default
         self.data = {}
         self.max_age = max_age
@@ -87,10 +97,10 @@ def is_youtube_video_id(id: str):
 def is_pietsmiet_video_id(id: str):
     return id and id.isdigit()
 
-def fetch_data(url, yt_video_id: str) -> dict[str, Any]:
+def fetch_data(url_template: str, yt_video_id: str) -> dict[str, Any]:
     try:
         # String format the videoId into the API URL
-        url = url.format(ytid=yt_video_id)
+        url = url_template.format(ytid=yt_video_id)
         app.logger.info(f"Fetching {url}", extra={'flush': True})
         start_time = time.time()
         response = requests.get(url)
@@ -98,7 +108,7 @@ def fetch_data(url, yt_video_id: str) -> dict[str, Any]:
         app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={'flush': True})
         return response.json()
     except Exception as e:
-        app.logger.error(f"Error fetching {url}: {str(e)}", extra={'flush': True})
+        app.logger.error(f"Error fetching {url_template}: {str(e)}", extra={'flush': True})
         return None
 
 cache = Cache()
@@ -131,27 +141,24 @@ def combine_responses():
         combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
 
-    # custom_thread = CustomOperationThread(custom_operation)
-    # custom_thread.start()
-
     # Use ThreadPoolExecutor to make concurrent requests
-    with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
-        future_to_url = {executor.submit(fetch_data, url, yt_video_id): (name, url) for (name, url) in API_ENDPOINTS.items()}
+    with ThreadPoolExecutor(max_workers=len(TASKS)) as executor:
+        future_to_url = {executor.submit(fetch_data, url_template, yt_video_id): (name, url_template) for (name, url_template) in TASKS.items()}
         
         for future in as_completed(future_to_url):
-            name, url = future_to_url[future]
+            name, url_template = future_to_url[future]
             try:
                 result = future.result()
                 if result:
                     combined_response[name] = result
             except Exception as ex:
-                app.logger.error(f"Fetching {url} generated an exception: {ex}")
+                app.logger.error(f"Fetched {name} generated an exception: {ex}")
 
-    try: combined_response["youtube-transcript"] = transcript.get(yt_video_id)
+    try:
+        combined_response["youtube-transcript"] = transcript.get(yt_video_id)
     except Exception as ex:
         app.logger.exception(ex)
         app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")
-    # custom_thread.join()
 
     # Calculate the total execution time
     combined_response["time"] = time.time() - start_time
