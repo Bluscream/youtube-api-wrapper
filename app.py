@@ -99,19 +99,20 @@ class BackgroundTaskManager:
 
     def wait(self):
         self.event.wait()
-        if self.exception:
-            raise self.exception
+        if self.exception: raise self.exception
         return self.result
 
-@staticmethod
-def is_youtube_video_id(id: str):
-    return id and bool(re.match(r'^[a-zA-Z0-9_-]{11}$', id, re.IGNORECASE))
+tasks = BackgroundTaskManager()
 
 @staticmethod
-def is_pietsmiet_video_id(id: str):
-    return id and id.isdigit()
+def is_youtube_video_id(video_id: str):
+    return video_id and bool(re.match(r'^[a-zA-Z0-9_-]{11}$', video_id, re.IGNORECASE))
 
-def fetch_data(url, yt_video_id: str) -> dict[str, Any] | None:
+@staticmethod
+def is_pietsmiet_video_id(video_id: str):
+    return video_id and video_id.isdigit()
+
+def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
     try:
         # String format the videoId into the API URL
         url = url.format(ytid=yt_video_id)
@@ -124,6 +125,8 @@ def fetch_data(url, yt_video_id: str) -> dict[str, Any] | None:
     except Exception as e:
         app.logger.error(f"Error fetching {url}: {str(e)}", extra={'flush': True})
         return None
+
+def get_transcripts(url: str, yt_video_id: str, )
 
 cache = Cache()
 cache.run_cleanup_thread()
@@ -158,8 +161,7 @@ def combine_responses():
         combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
 
-    # custom_thread = CustomOperationThread(custom_operation)
-    # custom_thread.start()
+    get_transcripts = tasks.start(example_task, "Background Task")
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
