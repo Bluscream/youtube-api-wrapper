@@ -1,84 +1,33 @@
-import asyncio, aiohttp, time, re, flask, datetime, typing
-from operator import is_
-import dataclasses
-import subtitles
+from decimal import ExtendedContext
+import time, json, requests, threading, logging, re
+from typing import Any, Optional
+from flask import Flask, request, jsonify
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+
+from subtitles import app as subtitles
 
 APP_NAME = "youtube-api-wrapper"
 APP_BUILD = 1
 APP_AUTHOR = "Bluscream"
 APP_SOURCE_URL = "https://github.com/Bluscream/youtube-api-wrapper"
-app = flask.Flask(__name__)
 
-async def fetch_json(url: str):
-        # try:
-            app.logger.info(f"Fetching {url}")
-            start_time = time.time()
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-            app.logger.info(f"Got {url} in {time.time() - start_time} seconds")
-            return data
-        # except Exception as e:
-        #     app.logger.error(f"Error fetching {url}: {str(e)}")
-        #     return None
-
-# region Task
-class AppTask:
-    run: typing.Callable[..., typing.Awaitable[tuple[typing.Any, dict[str, typing.Any]]]] # = dummy_coroutine # takes flask.Request from flask and returns dict[str, typing.Any]
-    name: str = "Unknown Task"
-    description: str = "Unknown Task"
-    is_default: bool = False
-    result: typing.Any
-    url: str
-    
-    def __init__(self, run: typing.Callable, name: str, description: str, is_default: bool, url: str = "") -> None:
-        self.run = run;self.name = name; self.description = description; self.is_default = is_default;self.url = url
-        app.logger.info(f"Initialized new {self.__class__.name}('{name}','{run}')")
-    
-# @dataclasses.dataclass
-# class CustomTask(Task):
-#     run: typing.Callable[[flask.Request], dict[str, typing.Any]|None] = None # takes flask.Request from flask and returns dict[str, typing.Any]
-    
-# class JSONWebAppTask(AppTask):
-#     url: str
-
-#     def __init__(self, url: str, name: str, description: str, is_default: bool) -> None:
-#         super().__init__(self.run, name, description, is_default)
-#         self.url = url
-#         app.logger.info(f"Initialized new {self.__class__.name}('{name}','{url}')")
-
-#     async def run(self, **kwargs) -> tuple[AppTask, dict[str,typing.Any]] | None:
-#         self.result = await fetch_json(self.url.format(**kwargs))
-#         return self, self.result
-
-# endregion TASK
-
-# region TASKS
-async def task_fetch_json(self: AppTask, **kwargs) -> tuple[AppTask, dict[str,typing.Any]] | None:
-    self.result = await fetch_json(self.url.format(**kwargs))
-    return self, self.result
-transcript_downloader = subtitles.YouTubeTranscriptDownloader()
-async def task_get_transcripts(self: AppTask, **kwargs) -> tuple[AppTask, dict[str,typing.Any]] | None:
-    ret = {}
-    start_time = time.time()
-    # TODO: Implement actual transcript fetching logic here
-    print("Got", len(ret), "transcripts in", time.time() - start_time, "seconds")
-    self.result = ret
-    return self, ret
-
-TASKS: list[AppTask] = [
-    AppTask(name="youtube-data", description="Gets metadata from Youtube Data API v3", is_default=True, url="https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}", run=task_fetch_json),
-    AppTask(name="youtube-dislike", description="Gets metadata from Youtube Dislike API", is_default=True, url="https://returnyoutubedislikeapi.com/votes?videoId={ytid}", run=task_fetch_json),
-    AppTask(name="youtube-sponsorblock", description="Gets metadata from Youtube Sponsorblock API", is_default=True, url="https://sponsor.ajay.app/api/skipSegments?videoID={ytid}", run=task_fetch_json),
-    AppTask(name="youtube-dearrow", description="Gets metadata from Youtube DeArrow API", is_default=True, url="https://sponsor.ajay.app/api/branding?videoID={ytid}", run=task_fetch_json),
-    AppTask(name="youtube-operational", description="Gets metadata from Youtube Operational API", is_default=True, url="https://yt.lemnoslife.com/videos?id={ytid}&part=chapters", run=task_fetch_json),
-    AppTask(name="youtube-subtitles", description="Gets Transcripts (subtitles/captions)", is_default=True, run=task_get_transcripts),
-]
-# endregion Tasks
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
-
+# Hardcoded list of API endpoints
+API_ENDPOINTS = {
+    "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
+    "youtube-dislike": "https://returnyoutubedislikeapi.com/votes?videoId={ytid}",
+    "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
+    "youtube-dearrow": "https://sponsor.ajay.app/api/branding?videoID={ytid}",
+    # "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoID={ytid}"
+    # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
+    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
+}
+DEFAULT_TASKS = ["youtube-data","youtube-dislike","youtube-sponsorblock","youtube-dearrow","youtube-subtitles","youtube-operational"]
 # region Docs
 DOCS = {
     "docs": {
@@ -94,116 +43,188 @@ DOCS = {
                     "description": "Returns available subtitles for the given youtube video"
                 }
             }
-        }
+        },
+        "default_tasks": DEFAULT_TASKS
     },
     "description": f"{APP_NAME} v{APP_BUILD} is written by {APP_AUTHOR} and open-sourced at {APP_SOURCE_URL}",
-    "time": datetime.datetime.now()
+    "time": datetime.now()
 }
-for task in TASKS:
-    DOCS["docs"]["query"]["params"][task.name] = {
+for name, url in API_ENDPOINTS.items():
+    DOCS["docs"]["query"]["params"][name] = {
         "type": "bool",
-        "default": task.is_default,
-        "description": task.description
+        "default": False,
+        "description": f"Returns the response from {url}"
     }
-    if hasattr(task, "url"):
-        DOCS["docs"]["query"]["params"][task.name]["url"] = task.url
-        
+for name in DEFAULT_TASKS:
+    DOCS["docs"]["query"]["params"][name]["default"] = True
 # endregion Docs
 
 # region Cache
 class AppCache:
-    data: dict[str, object] = {}
+    data: dict[str,object] = {}
 
     def __init__(self, max_age=600):  # 10 minutes default
         self.data = {}
         self.max_age = max_age
-        self.lock = asyncio.Lock()
-        app.logger.info(f"Initialized {self.__class__.__name__}")
+        self.lock = threading.Lock()
+        logger.info(f"Initialized AppCache ({max_age}s)")
 
-    async def get(self, key):
-        async with self.lock:
+    def get(self, key):
+        with self.lock:
             if key in self.data:
                 return self.data.get(key)
             return None
 
-    async def set(self, key, value):
-        async with self.lock:
+    def set(self, key, value):
+        with self.lock:
             self.data[key] = value
 
-    async def delete(self, key):
-        async with self.lock:
+    def delete(self, key):
+        with self.lock:
             if key in self.data:
                 del self.data[key]
 
-    async def clean_old_entries(self):
-        app.logger.warning(f"Purging Cache with {len(self.data)} items!")
+    def clean_old_entries(self):
         self.data = {}
 
-    async def run_cleanup_thread(self):
-        while True:
-            await self.clean_old_entries()
-            await asyncio.sleep(600)  # Run cleanup every minute
+    def run_cleanup_thread(self):
+        def cleanup_loop():
+            while True:
+                self.clean_old_entries()
+                time.sleep(self.max_age)  # Run cleanup every minute
 
-cache = AppCache()
+        cleanup_thread = threading.Thread(target=cleanup_loop)
+        cleanup_thread.daemon = True
+        cleanup_thread.start()
 # endregion Cache
 
-async def is_youtube_video_id(video_id: str):
+class BackgroundTaskManager:
+    def __init__(self):
+        self.event = threading.Event()
+        self.result = None
+        self.exception = None
+
+    def start(self, func, *args, **kwargs):
+        def wrapper():
+            try:
+                self.result = func(*args, **kwargs)
+            except Exception as e:
+                self.exception = e
+            finally:
+                self.event.set()
+
+        thread = threading.Thread(target=wrapper)
+        thread.start()
+        return thread
+
+    def wait(self):
+        self.event.wait()
+        if self.exception:
+            raise self.exception # type: ignore
+        return self.result
+
+tasks = BackgroundTaskManager()
+
+@staticmethod
+def is_youtube_video_id(video_id: str):
     return video_id and bool(re.match(r"^[a-zA-Z0-9_-]{11}$", video_id, re.IGNORECASE))
 
-async def is_pietsmiet_video_id(video_id: str):
+@staticmethod
+def is_pietsmiet_video_id(video_id: str):
     return video_id and video_id.isdigit()
 
-# region Routes    
-@app.route('/', methods=['GET'])
-async def route_get_main():
-    combined_response = {}
-    start_time = time.time()
-    yt_video_id = flask.request.args.get('videoId', '', str)
-    fresh = flask.request.args.get('fresh', False, bool)
+def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
+    try:
+        # String format the videoId into the API URL
+        url = url.format(ytid=yt_video_id)
+        app.logger.info(f"Fetching {url}", extra={"flush": True})
+        start_time = time.time()
+        response = requests.get(url)
+        response.raise_for_status()
+        app.logger.info(f"Got {url} in {time.time() - start_time} seconds", extra={"flush": True})
+        return response.json()
+    except Exception as e:
+        app.logger.error(f"Error fetching {url}: {str(e)}", extra={"flush": True})
+        return None
 
-    if not await is_youtube_video_id(yt_video_id):
-        if await is_pietsmiet_video_id(yt_video_id):
-            res = await fetch_json(PSDE_API_URL.format(ytid=yt_video_id))
+def get_transcripts(yt_video_id: str, langs: list[tuple[str,str]]):
+    start_time = time.time()
+    ret = subtitles.add_video(None, yt_video_id, ["raw"], langs, False)
+    print("Got", len(ret),"transcripts in",time.time() - start_time,"seconds")
+    return ret
+
+cache = AppCache()
+cache.run_cleanup_thread()
+
+app = Flask(__name__)
+@app.route("/", methods=["GET"])
+def get_main():
+    
+    start_time = time.time()
+    
+    # full_info = request.args.get("fullInfo", default=False, type=bool)
+
+    # Get the YouTube video ID from the request body
+    yt_video_id = request.args.get("videoId", "", str)
+    fresh = request.args.get("fresh", False, bool)
+
+    # Validate the video ID
+    if not is_youtube_video_id(yt_video_id):
+        if is_pietsmiet_video_id(yt_video_id):
+            res: dict[str, Any] | None = fetch_data(PSDE_API_URL, yt_video_id)
             if not res:
                 app.logger.error(f"pietsmiet.de VideoId \"{yt_video_id}\" can not resolve to youtube video!")
-                return flask.jsonify({"error": "cannot resolve 'videoId'"}), 400
-            yt_video_id = res["secondaryHref"].split('/')[-1]
+                return jsonify({"error": "cannot resolve 'videoId'"}), 400
+            yt_video_id = res["secondaryHref"].split("/")[-1]
         else:
             app.logger.error(f"VideoId \"{yt_video_id}\" is neither youtube nor pietsmiet")
-            return flask.jsonify({"error": "missing or invalid 'videoId' (supports youtube and pietsmiet.de)"}), 400
+            return jsonify({"error": "missing or invalid 'videoId' (supports youtube and pietsmiet.de)"}), 400
 
-    # tasks = TASKS.copy()
+    combined_response = {} # Create a dictionary to store the fetched data
+
+    # Check cache first
     if not fresh and yt_video_id in cache.data:
         app.logger.info(f"Cached response found for {yt_video_id}")
-        return flask.jsonify(cache.data[yt_video_id])
+        combined_response.update(cache.data.get(yt_video_id)) # type: ignore
+        combined_response["time"] = time.time() - start_time
+        return jsonify(combined_response)
 
-    # async with aiohttp.ClientSession():
-    tasks_list = [
-        asyncio.create_task(task.run(self=task, ytid=yt_video_id)) for task in TASKS # typing: ignore
-    ]
-    done, _ = await asyncio.wait(tasks_list, return_when=asyncio.ALL_COMPLETED)
-    _task: asyncio.Task[tuple[AppTask, dict[str, typing.Any]]]
-    for _task in done:
-        if _task.exception():
-            app.logger.error(f"Task {_task} raised an exception: {_task.exception()}")
-        else:
-            task, result = _task.result()
-            if result:
-                combined_response[task.name] = result
-    
+    tasks.start(get_transcripts, yt_video_id, [("English", "en")]) # todo: langs
+
+    # Use ThreadPoolExecutor to make concurrent requests
+    with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
+        future_to_url = {executor.submit(fetch_data, url, yt_video_id): (name, url) for (name, url) in API_ENDPOINTS.items()}
+        
+        for future in as_completed(future_to_url):
+            name, url = future_to_url[future]
+            try:
+                result = future.result()
+                if result:
+                    combined_response[name] = result
+            except Exception as ex:
+                app.logger.error(f"Fetching {url} generated an exception: {ex}")
+
+    try: combined_response["youtube-transcripts"] = tasks.wait()
+    except Exception as ex:
+        app.logger.exception(ex)
+        app.logger.error(f"Failed to get transcript for video {yt_video_id}: {ex}")
+    # custom_thread.join()
+
+    # Calculate the total execution time
     combined_response["time"] = time.time() - start_time
 
+    # Combine the responses
+    # combined_response = {k: v for k, v in combined_response.items() if v}
+
+    # Cache the response
     cache.data[yt_video_id] = combined_response
 
-    return flask.jsonify(combined_response)
+    return jsonify(combined_response)
 
-@app.route('/about', methods=['GET'])
-@app.route('/docs', methods=['GET'])
-async def route_get_about():
-    return flask.jsonify(DOCS)
-# endregion Routes
+@app.route("/about", methods=["GET"])
+@app.route("/docs", methods=["GET"])
+def get_about():
+    return jsonify(DOCS)
 
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.create_task(cache.run_cleanup_thread())
-    app.run(host='0.0.0.0', port=7077) # asyncio.run(get_main())
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0", port=7077)
