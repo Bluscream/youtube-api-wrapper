@@ -2,3 +2,7 @@
 	path = flask-youtube-transcript-wrapper
 	url = https://github.com/Bluscream/flask-youtube-transcript-wrapper
 	branch = main
+[submodule "subtitles"]
+	path = subtitles
+	url = https://github.com/Bluscream/flask-youtube-transcript-wrapper
+	branch = main
