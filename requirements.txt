@@ -1,5 +1,3 @@
-Flask
-requests
-blackboxprotobuf
-bbpb
 youtube_transcript_api
+aiohttp
+Flask[async]
