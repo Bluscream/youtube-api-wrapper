@@ -97,6 +97,8 @@ class AppCache:
         cleanup_thread = threading.Thread(target=cleanup_loop)
         cleanup_thread.daemon = True
         cleanup_thread.start()
+cache = AppCache()
+cache.run_cleanup_thread()
 # endregion Cache
 
 class BackgroundTaskManager:
@@ -148,15 +150,13 @@ def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
         app.logger.error(f"Error fetching {url}: {str(e)}", extra={"flush": True})
         return None
 
-def get_transcripts(yt_video_id: str, langs: list[tuple[str,str]]):
+def get_transcripts(yt_video_id: str, langs: list[tuple[str,str]], fetch = False):
     start_time = time.time()
-    ret = subtitles.add_video(None, yt_video_id, ["raw"], langs, False)
+    ret = subtitles.add_video(None, yt_video_id, [], langs, False) # type: ignore
     print("Got", len(ret),"transcripts in",time.time() - start_time,"seconds")
     return ret
 
-cache = AppCache()
-cache.run_cleanup_thread()
-
+# region Flask
 app = Flask(__name__)
 @app.route("/", methods=["GET"])
 def get_main():
@@ -222,10 +222,26 @@ def get_main():
 
     return jsonify(combined_response)
 
+@app.route("/caption", methods=["GET"])
+@app.route("/subtitle", methods=["GET"])
+@app.route('/transcript', methods=['GET'])
+def get_transcript():
+    
+    # try:
+    _video_id = request.args.get('videoId')
+    _format = request.args.get('format', 'vtt')
+    _lang = request.args.get('lang', 'en')
+    if _video_id and _format and _lang:
+        return subtitles.get_transcript(_video_id, _lang, _format) # type: ignore
+    else:
+        return jsonify({"error": "Need 'videoId' and 'lang'!"}), 400
+
 @app.route("/about", methods=["GET"])
 @app.route("/docs", methods=["GET"])
 def get_about():
     return jsonify(DOCS)
+
+#endregion Flask
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=7077)
