@@ -1,3 +1,4 @@
 youtube_transcript_api
 aiohttp
+python-dotenv
 Flask[async]

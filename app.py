@@ -4,6 +4,12 @@ from typing import Any, Optional
 from flask import Flask, request, jsonify
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from os import environ
+from dotenv import load_dotenv
+load_dotenv() # Load environment variables from .env file
+
+
+
 
 from subtitles import app as subtitles
 
@@ -16,10 +22,10 @@ APP_SOURCE_URL = "https://github.com/Bluscream/youtube-api-wrapper"
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+YT_API_KEY = environ.get('YT_API_KEY')
 PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
-# Hardcoded list of API endpoints
-API_ENDPOINTS = {
-    # "youtube-data": "https://youtube.googleapis.com/youtube/v3/videos?key={yt_api_key}&part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
+
+API_ENDPOINTS = { # Hardcoded list of API endpoints
     "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
     "youtube-dislike": "https://returnyoutubedislikeapi.com/votes?videoId={ytid}",
     "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
@@ -28,6 +34,10 @@ API_ENDPOINTS = {
     # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
     "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
 }
+
+if YT_API_KEY:
+    API_ENDPOINTS["youtube-data"] = "https://youtube.googleapis.com/youtube/v3/videos?key={YT_API_KEY}&part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}"
+
 DEFAULT_TASKS = ["youtube-data","youtube-dislike","youtube-sponsorblock","youtube-dearrow","youtube-subtitles","youtube-operational"]
 # region Docs
 DOCS = {
@@ -139,7 +149,7 @@ def is_pietsmiet_video_id(video_id: str):
 def fetch_data(url: str, yt_video_id: str) -> dict[str, Any] | None:
     try:
         # String format the videoId into the API URL
-        url = url.format(ytid=yt_video_id)
+        url = url.format(ytid=yt_video_id,YT_API_KEY=YT_API_KEY)
         app.logger.info(f"Fetching {url}", extra={"flush": True})
         start_time = time.time()
         response = requests.get(url)
