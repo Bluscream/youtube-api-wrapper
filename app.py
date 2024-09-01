@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 PSDE_API_URL = "https://pietsmiet.zaanposni.com/api/video/{ytid}"
 # Hardcoded list of API endpoints
 API_ENDPOINTS = {
+    # "youtube-data": "https://youtube.googleapis.com/youtube/v3/videos?key={yt_api_key}&part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
     "youtube-data": "https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}",
     "youtube-dislike": "https://returnyoutubedislikeapi.com/votes?videoId={ytid}",
     "youtube-sponsorblock": "https://sponsor.ajay.app/api/skipSegments?videoID={ytid}",
