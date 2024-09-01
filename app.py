@@ -1,4 +1,5 @@
 import asyncio, aiohttp, time, re, flask, datetime, typing
+from operator import is_
 import dataclasses
 import subtitles
 
@@ -22,46 +23,57 @@ async def fetch_json(url: str):
         #     app.logger.error(f"Error fetching {url}: {str(e)}")
         #     return None
 
-async def dummy_coroutine(request: flask.Request) -> dict[str,typing.Any]:
-    app.logger.error("Dummy Coroutine called!")
-    return {}
-
 # region Task
-@dataclasses.dataclass
-class Task:
-    run: typing.Callable[[flask.Request], typing.Awaitable[dict[str, typing.Any]]] = dummy_coroutine # takes flask.Request from flask and returns dict[str, typing.Any]
+class AppTask:
+    run: typing.Callable[..., typing.Awaitable[tuple[typing.Any, dict[str, typing.Any]]]] # = dummy_coroutine # takes flask.Request from flask and returns dict[str, typing.Any]
     name: str = "Unknown Task"
     description: str = "Unknown Task"
     is_default: bool = False
+    result: typing.Any
+    url: str
+    
+    def __init__(self, run: typing.Callable, name: str, description: str, is_default: bool, url: str = "") -> None:
+        self.run = run;self.name = name; self.description = description; self.is_default = is_default;self.url = url
+        app.logger.info(f"Initialized new {self.__class__.name}('{name}','{run}')")
     
 # @dataclasses.dataclass
 # class CustomTask(Task):
 #     run: typing.Callable[[flask.Request], dict[str, typing.Any]|None] = None # takes flask.Request from flask and returns dict[str, typing.Any]
     
-@dataclasses.dataclass
-class JSONWebTask(Task):
-    url: str = ""
-    async def run(self, request: flask.Request) -> dict[str,typing.Any] | None:
-        return await fetch_json(self.url.format(**request.args))
+# class JSONWebAppTask(AppTask):
+#     url: str
+
+#     def __init__(self, url: str, name: str, description: str, is_default: bool) -> None:
+#         super().__init__(self.run, name, description, is_default)
+#         self.url = url
+#         app.logger.info(f"Initialized new {self.__class__.name}('{name}','{url}')")
+
+#     async def run(self, **kwargs) -> tuple[AppTask, dict[str,typing.Any]] | None:
+#         self.result = await fetch_json(self.url.format(**kwargs))
+#         return self, self.result
 
 # endregion TASK
 
 # region TASKS
+async def task_fetch_json(self: AppTask, **kwargs) -> tuple[AppTask, dict[str,typing.Any]] | None:
+    self.result = await fetch_json(self.url.format(**kwargs))
+    return self, self.result
 transcript_downloader = subtitles.YouTubeTranscriptDownloader()
-async def get_transcripts(request: flask.Request) -> dict[str,typing.Any] | None:
+async def task_get_transcripts(self: AppTask, **kwargs) -> tuple[AppTask, dict[str,typing.Any]] | None:
     ret = {}
     start_time = time.time()
     # TODO: Implement actual transcript fetching logic here
     print("Got", len(ret), "transcripts in", time.time() - start_time, "seconds")
-    return ret
+    self.result = ret
+    return self, ret
 
-TASKS: list[Task] = [
-    JSONWebTask(name="youtube-data", description="Gets metadata from Youtube Data API v3", is_default=True, url="https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}"),
-    JSONWebTask(name="youtube-dislike", description="Gets metadata from Youtube Dislike API", is_default=True, url="https://returnyoutubedislikeapi.com/votes?videoId={ytid}"),
-    JSONWebTask(name="youtube-sponsorblock", description="Gets metadata from Youtube Sponsorblock API", is_default=True, url="https://sponsor.ajay.app/api/skipSegments?videoID={ytid}"),
-    JSONWebTask(name="youtube-dearrow", description="Gets metadata from Youtube DeArrow API", is_default=True, url="https://sponsor.ajay.app/api/branding?videoID={ytid}"),
-    JSONWebTask(name="youtube-operational", description="Gets metadata from Youtube Operational API", is_default=True, url="https://yt.lemnoslife.com/videos?id={ytid}&part=chapters"),
-    Task(name="youtube-subtitles", description="Gets Transcripts (subtitles/captions)", is_default=True, run=get_transcripts),
+TASKS: list[AppTask] = [
+    AppTask(name="youtube-data", description="Gets metadata from Youtube Data API v3", is_default=True, url="https://yt.lemnoslife.com/noKey/videos?part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}", run=task_fetch_json),
+    AppTask(name="youtube-dislike", description="Gets metadata from Youtube Dislike API", is_default=True, url="https://returnyoutubedislikeapi.com/votes?videoId={ytid}", run=task_fetch_json),
+    AppTask(name="youtube-sponsorblock", description="Gets metadata from Youtube Sponsorblock API", is_default=True, url="https://sponsor.ajay.app/api/skipSegments?videoID={ytid}", run=task_fetch_json),
+    AppTask(name="youtube-dearrow", description="Gets metadata from Youtube DeArrow API", is_default=True, url="https://sponsor.ajay.app/api/branding?videoID={ytid}", run=task_fetch_json),
+    AppTask(name="youtube-operational", description="Gets metadata from Youtube Operational API", is_default=True, url="https://yt.lemnoslife.com/videos?id={ytid}&part=chapters", run=task_fetch_json),
+    AppTask(name="youtube-subtitles", description="Gets Transcripts (subtitles/captions)", is_default=True, run=task_get_transcripts),
 ]
 # endregion Tasks
 
@@ -165,18 +177,19 @@ async def route_get_main():
         app.logger.info(f"Cached response found for {yt_video_id}")
         return flask.jsonify(cache.data[yt_video_id])
 
-    async with aiohttp.ClientSession() as session:
-        tasks_list = [
-            asyncio.create_task(task.run(flask.request)) for task in TASKS
-        ]
-        done, _ = await asyncio.wait(tasks_list, return_when=asyncio.ALL_COMPLETED)
-        for task in done:
-            if task.exception():
-                app.logger.error(f"Task {task} raised an exception: {task.exception()}")
-            else:
-                result = task.result()
-                if result:
-                    combined_response[task.name] = result
+    # async with aiohttp.ClientSession():
+    tasks_list = [
+        asyncio.create_task(task.run(self=task, ytid=yt_video_id)) for task in TASKS # typing: ignore
+    ]
+    done, _ = await asyncio.wait(tasks_list, return_when=asyncio.ALL_COMPLETED)
+    _task: asyncio.Task[tuple[AppTask, dict[str, typing.Any]]]
+    for _task in done:
+        if _task.exception():
+            app.logger.error(f"Task {_task} raised an exception: {_task.exception()}")
+        else:
+            task, result = _task.result()
+            if result:
+                combined_response[task.name] = result
     
     combined_response["time"] = time.time() - start_time
 
