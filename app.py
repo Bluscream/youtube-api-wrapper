@@ -97,7 +97,7 @@ class AppCache:
         cleanup_thread = threading.Thread(target=cleanup_loop)
         cleanup_thread.daemon = True
         cleanup_thread.start()
-cache = AppCache()
+cache = AppCache(max_age=1800)
 cache.run_cleanup_thread()
 # endregion Cache
 
