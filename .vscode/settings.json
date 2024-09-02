@@ -1,4 +1,24 @@
 {
     "python.analysis.typeCheckingMode": "basic",
-    "python.analysis.autoImportCompletions": true
+    "python.analysis.autoImportCompletions": true,
+    "json.schemas.local": [
+        {
+          "fileMatch": ["response.json"],
+          "url": "file:///C:/Users/blusc/AppData/Local/Temp/youtube-api-wrapper/schemas/response.schema.json"
+        },
+        {
+          "fileMatch": ["transcript.json"],
+          "url": "file:///C:/Users/blusc/AppData/Local/Temp/youtube-api-wrapper/schemas/transcript.schema.json"
+        }
+      ],
+      "json.schemas": [
+        {
+          "fileMatch": ["response.json"],
+          "url": "https://github.com/Bluscream/youtube-api-wrapper/raw/main/schemas/response.schema.json"
+        },
+        {
+          "fileMatch": ["transcript.json"],
+          "url": "https://github.com/Bluscream/youtube-api-wrapper/raw/main/schemas/transcript.schema.json"
+        }
+      ]
 }

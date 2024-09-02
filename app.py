@@ -69,6 +69,138 @@ for name, url in API_ENDPOINTS.items():
 for name in DEFAULT_TASKS:
     DOCS["docs"]["query"]["params"][name]["default"] = True
 # endregion Docs
+# region OpenApi
+from flask_openapi3 import APISpec, APIBlueprint
+from flask import Flask
+spec = APISpec(
+    title="YouTube API Wrapper",
+    version="1.0",
+    openapi_version="3.0.2",
+    servers=[
+        {"url": "http://localhost:7077"},
+    ],
+    components={
+        "schemas": {
+            "VideoId": {
+                "type": "string",
+                "pattern": r"^[a-zA-Z0-9_-]{11}$"
+            },
+            "Boolean": {
+                "type": "boolean"
+            }
+        }
+    }
+)
+bp = APIBlueprint(spec)
+
+@bp.path("/get_main", "Get Main Information", "GET")
+def get_main_path():
+    return spec.path(
+        operation_id="get_main",
+        parameters=[
+            spec.parameter("videoId", "Video ID", "Query parameter", "VideoId"),
+            spec.parameter("fresh", "Fresh", "Query parameter", "Boolean")
+        ],
+        responses={
+            "200": {
+                "description": "Successful response",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "youtube-data": {"type": "object"},
+                                "youtube-dislike": {"type": "object"},
+                                "youtube-sponsorblock": {"type": "object"},
+                                "youtube-dearrow": {"type": "object"},
+                                "youtube-operational": {"type": "object"},
+                                "time": {"type": "number"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+@bp.path("/get_transcript", "Get Transcript", "GET")
+def get_transcript_path():
+    return spec.path(
+        operation_id="get_transcript",
+        parameters=[
+            spec.parameter("videoId", "Video ID", "Query parameter", "VideoId"),
+            spec.parameter("format", "Format", "Query parameter", "string"),
+            spec.parameter("lang", "Language", "Query parameter", "string")
+        ],
+        responses={
+            "200": {
+                "description": "Transcript",
+                "content": {
+                    "text/plain": {
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "400": {
+                "description": "Bad Request",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {"type": "string"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+@bp.path("/get_about", "Get About Information", "GET")
+def get_about_path():
+    return spec.path(
+        operation_id="get_about",
+        responses={
+            "200": {
+                "description": "About Information",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "docs": {
+                                    "type": "object",
+                                    "properties": {
+                                        "query": {
+                                            "type": "object",
+                                            "properties": {
+                                                "params": {
+                                                    "type": "object",
+                                                    "additionalProperties": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {"type": "string"},
+                                                            "default": {"type": "boolean"},
+                                                            "description": {"type": "string"}
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+
+
 
 # region Cache
 class AppCache:
@@ -168,6 +300,12 @@ def get_transcripts(yt_video_id: str, langs: list[tuple[str,str]], fetch = False
 
 # region Flask
 app = Flask(__name__)
+app.config['OPENAPI_VERSION'] = '3.0.2'
+app.config['OPENAPI_URL'] = '/swagger.json'
+bp.init_app(app)
+@app.route('/docs')
+def index():
+    return bp.handle_request(request)
 @app.route("/", methods=["GET"])
 def get_main():
     
@@ -247,7 +385,6 @@ def get_transcript():
         return jsonify({"error": "Need 'videoId' and 'lang'!"}), 400
 
 @app.route("/about", methods=["GET"])
-@app.route("/docs", methods=["GET"])
 def get_about():
     return jsonify(DOCS)
 
