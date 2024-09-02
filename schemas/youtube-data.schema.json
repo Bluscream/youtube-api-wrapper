@@ -1,0 +1,343 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/YoutubeDataAPIResponse",
+    "definitions": {
+        "YoutubeDataAPIResponse": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "type": "string"
+                },
+                "etag": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Item"
+                    }
+                },
+                "pageInfo": {
+                    "$ref": "#/definitions/PageInfo"
+                }
+            },
+            "required": [
+                "etag",
+                "items",
+                "kind",
+                "pageInfo"
+            ],
+            "title": "YoutubeDataAPIResponse"
+        },
+        "Item": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "type": "string"
+                },
+                "etag": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "snippet": {
+                    "$ref": "#/definitions/Snippet"
+                },
+                "contentDetails": {
+                    "$ref": "#/definitions/ContentDetails"
+                },
+                "status": {
+                    "$ref": "#/definitions/Status"
+                },
+                "statistics": {
+                    "$ref": "#/definitions/Statistics"
+                },
+                "player": {
+                    "$ref": "#/definitions/Player"
+                },
+                "recordingDetails": {
+                    "$ref": "#/definitions/RecordingDetails"
+                }
+            },
+            "required": [
+                "contentDetails",
+                "etag",
+                "id",
+                "kind",
+                "player",
+                "recordingDetails",
+                "snippet",
+                "statistics",
+                "status"
+            ],
+            "title": "Item"
+        },
+        "ContentDetails": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "dimension": {
+                    "type": "string"
+                },
+                "definition": {
+                    "type": "string"
+                },
+                "caption": {
+                    "type": "string",
+                    "format": "boolean"
+                },
+                "licensedContent": {
+                    "type": "boolean"
+                },
+                "contentRating": {
+                    "$ref": "#/definitions/RecordingDetails"
+                },
+                "projection": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "caption",
+                "contentRating",
+                "definition",
+                "dimension",
+                "duration",
+                "licensedContent",
+                "projection"
+            ],
+            "title": "ContentDetails"
+        },
+        "RecordingDetails": {
+            "type": "object",
+            "additionalProperties": false,
+            "title": "RecordingDetails"
+        },
+        "Player": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "embedHtml": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "embedHtml"
+            ],
+            "title": "Player"
+        },
+        "Snippet": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "publishedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "channelId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "thumbnails": {
+                    "$ref": "#/definitions/Thumbnails"
+                },
+                "channelTitle": {
+                    "type": "string"
+                },
+                "categoryId": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "liveBroadcastContent": {
+                    "type": "string"
+                },
+                "defaultLanguage": {
+                    "type": "string"
+                },
+                "localized": {
+                    "$ref": "#/definitions/Localized"
+                },
+                "defaultAudioLanguage": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "categoryId",
+                "channelId",
+                "channelTitle",
+                "defaultAudioLanguage",
+                "defaultLanguage",
+                "description",
+                "liveBroadcastContent",
+                "localized",
+                "publishedAt",
+                "thumbnails",
+                "title"
+            ],
+            "title": "Snippet"
+        },
+        "Localized": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "description",
+                "title"
+            ],
+            "title": "Localized"
+        },
+        "Thumbnails": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "default": {
+                    "$ref": "#/definitions/Default"
+                },
+                "medium": {
+                    "$ref": "#/definitions/Default"
+                },
+                "high": {
+                    "$ref": "#/definitions/Default"
+                },
+                "standard": {
+                    "$ref": "#/definitions/Default"
+                },
+                "maxres": {
+                    "$ref": "#/definitions/Default"
+                }
+            },
+            "required": [
+                "default",
+                "high",
+                "maxres",
+                "medium",
+                "standard"
+            ],
+            "title": "Thumbnails"
+        },
+        "Default": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "qt-uri-protocols": [
+                        "https"
+                    ],
+                    "qt-uri-extensions": [
+                        ".jpg"
+                    ]
+                },
+                "width": {
+                    "type": "integer"
+                },
+                "height": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "height",
+                "url",
+                "width"
+            ],
+            "title": "Default"
+        },
+        "Statistics": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "viewCount": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "likeCount": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "favoriteCount": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "commentCount": {
+                    "type": "string",
+                    "format": "integer"
+                }
+            },
+            "required": [
+                "commentCount",
+                "favoriteCount",
+                "likeCount",
+                "viewCount"
+            ],
+            "title": "Statistics"
+        },
+        "Status": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "uploadStatus": {
+                    "type": "string"
+                },
+                "privacyStatus": {
+                    "type": "string"
+                },
+                "license": {
+                    "type": "string"
+                },
+                "embeddable": {
+                    "type": "boolean"
+                },
+                "publicStatsViewable": {
+                    "type": "boolean"
+                },
+                "madeForKids": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "embeddable",
+                "license",
+                "madeForKids",
+                "privacyStatus",
+                "publicStatsViewable",
+                "uploadStatus"
+            ],
+            "title": "Status"
+        },
+        "PageInfo": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "totalResults": {
+                    "type": "integer"
+                },
+                "resultsPerPage": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "resultsPerPage",
+                "totalResults"
+            ],
+            "title": "PageInfo"
+        }
+    }
+}

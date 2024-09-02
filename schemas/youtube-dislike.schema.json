@@ -1,0 +1,52 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/YoutubeDislikeAPIResponse",
+    "definitions": {
+        "YoutubeDislikeAPIResponse": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "dateCreated": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "rawDislikes": {
+                    "type": "integer"
+                },
+                "rawLikes": {
+                    "type": "integer"
+                },
+                "dislikes": {
+                    "type": "integer"
+                },
+                "rating": {
+                    "type": "number"
+                },
+                "viewCount": {
+                    "type": "integer"
+                },
+                "deleted": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "dateCreated",
+                "deleted",
+                "dislikes",
+                "id",
+                "likes",
+                "rating",
+                "rawDislikes",
+                "rawLikes",
+                "viewCount"
+            ],
+            "title": "YoutubeDislikeAPIResponse"
+        }
+    }
+}

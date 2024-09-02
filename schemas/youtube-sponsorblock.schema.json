@@ -1,0 +1,53 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "type": "array",
+    "items": {
+        "$ref": "#/definitions/YoutubeSponsorblockAPIResponseElement"
+    },
+    "definitions": {
+        "YoutubeSponsorblockAPIResponseElement": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "actionType": {
+                    "type": "string"
+                },
+                "segment": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "UUID": {
+                    "type": "string"
+                },
+                "videoDuration": {
+                    "type": "number"
+                },
+                "locked": {
+                    "type": "integer"
+                },
+                "votes": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "UUID",
+                "actionType",
+                "category",
+                "description",
+                "locked",
+                "segment",
+                "videoDuration",
+                "votes"
+            ],
+            "title": "YoutubeSponsorblockAPIResponseElement"
+        }
+    }
+}

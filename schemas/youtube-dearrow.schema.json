@@ -1,0 +1,76 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/YoutubeDeArrowAPIResponse",
+    "definitions": {
+        "YoutubeDeArrowAPIResponse": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "titles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Thumbnail"
+                    }
+                },
+                "thumbnails": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Thumbnail"
+                    }
+                },
+                "randomTime": {
+                    "type": "number"
+                },
+                "videoDuration": {
+                    "type": "null"
+                }
+            },
+            "required": [
+                "randomTime",
+                "thumbnails",
+                "titles",
+                "videoDuration"
+            ],
+            "title": "YoutubeDeArrowAPIResponse"
+        },
+        "Thumbnail": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "timestamp": {
+                    "anyOf": [
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "original": {
+                    "type": "boolean"
+                },
+                "votes": {
+                    "type": "integer"
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "UUID": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "title": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "UUID",
+                "locked",
+                "original",
+                "votes"
+            ],
+            "title": "Thumbnail"
+        }
+    }
+}
