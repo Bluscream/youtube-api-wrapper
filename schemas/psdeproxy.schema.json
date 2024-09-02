@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/PSDEProxyResponse",
+    "definitions": {
+        "PSDEProxyResponse": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "remoteId": {
+                    "type": "string",
+                    "format": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "additionalInfo": {
+                    "type": "null"
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "imageUri": {
+                    "type": "string"
+                },
+                "href": {
+                    "type": "string",
+                    "format": "uri",
+                    "qt-uri-protocols": [
+                        "http"
+                    ]
+                },
+                "secondaryHref": {
+                    "type": "string",
+                    "format": "uri",
+                    "qt-uri-protocols": [
+                        "https"
+                    ]
+                },
+                "duration": {
+                    "type": "integer"
+                },
+                "importedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "importedFrom": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            },
+            "title": "pietsmiet.de proxy response",
+            "description": "Response given by pietsmiet.zaanposni.com/api/video/<id|url>",
+            "examples": [
+                "https://pietsmiet.zaanposni.com/api/video/1d1cd6cb-d011-4313-9414-4523014f06cc",
+                "https://pietsmiet.zaanposni.com/api/video/79644",
+                "https://pietsmiet.zaanposni.com/api/video/http%3A%2F%2Fptsmt.de%2Fv%2F79644",
+                "https://pietsmiet.zaanposni.com/api/video/https%3A%2F%2Fyoutu.be%2Fjfy1tTQcm10"
+            ]
+        }
+    }
+}

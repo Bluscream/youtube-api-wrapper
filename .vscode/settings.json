@@ -9,6 +9,10 @@
         {
           "fileMatch": ["transcript.json"],
           "url": "file:///C:/Users/blusc/AppData/Local/Temp/youtube-api-wrapper/schemas/transcript.schema.json"
+        },
+        {
+          "fileMatch": ["psdeproxy.json"],
+          "url": "file:///C:/Users/blusc/AppData/Local/Temp/youtube-api-wrapper/schemas/psdeproxy.schema.json"
         }
       ],
       "json.schemas": [
@@ -19,6 +23,10 @@
         {
           "fileMatch": ["transcript.json"],
           "url": "https://github.com/Bluscream/youtube-api-wrapper/raw/main/schemas/transcript.schema.json"
+        },
+        {
+          "fileMatch": ["psdeproxy.json"],
+          "url": "https://github.com/Bluscream/youtube-api-wrapper/raw/main/schemas/psdeproxy.schema.json"
         }
       ]
 }
