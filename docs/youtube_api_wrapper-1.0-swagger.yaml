@@ -30,13 +30,12 @@ paths:
           schema:
             type: string
             pattern: ^[a-zA-Z0-9_-]{11}$
-          description: YouTube video ID
+          description: YouTube or pietsmiet.de video ID
         - name: fresh
           in: query
           required: false
           schema:
             type: boolean
-            default: false
           description: Invalidates the cache so a fresh result is returned
       responses:
         '200':
@@ -44,20 +43,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  youtube-data:
-                    type: object
-                  youtube-dislike:
-                    type: object
-                  youtube-sponsorblock:
-                    type: object
-                  youtube-dearrow:
-                    type: object
-                  youtube-operational:
-                    type: object
-                  time:
-                    type: number
+                $ref: '#/components/schemas/YoutubeAPIProxyResponse'
         '400':
           description: Bad request
           content:
@@ -84,14 +70,12 @@ paths:
             enum:
               - vtt
               - srt
-            default: vtt
           description: Caption format (e.g., vtt, srt)
         - name: lang
           in: query
           required: false
           schema:
             type: string
-            default: en
           description: Language code
       responses:
         '200':
@@ -121,7 +105,6 @@ paths:
           required: false
           schema:
             type: string
-            default: en
           description: Language code
       responses:
         '200':
@@ -151,7 +134,6 @@ paths:
           required: false
           schema:
             type: string
-            default: en
           description: Language code
       responses:
         '200':
@@ -174,29 +156,358 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  docs:
-                    type: object
-                    properties:
-                      query:
-                        type: object
-                        properties:
-                          params:
-                            type: object
-                            additionalProperties:
-                              type: object
-                              properties:
-                                type:
-                                  type: string
-                                default:
-                                  type: boolean
-                                description:
-                                  type: string
+                $ref: '#/components/schemas/AboutResponse'
 components:
   schemas:
-    VideoId:
-      type: string
-      pattern: ^[a-zA-Z0-9_-]{11}$
-    Boolean:
-      type: boolean
+    YoutubeAPIProxyResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        time:
+          type: number
+        youtube-data:
+          $ref: '#/components/schemas/YoutubeData'
+        youtube-dislike:
+          $ref: '#/components/schemas/YoutubeDislike'
+        youtube-operational:
+          $ref: '#/components/schemas/YoutubeOperational'
+        youtube-transcripts:
+          $ref: '#/components/schemas/YoutubeTranscripts'
+    YoutubeData:
+      type: object
+      additionalProperties: false
+      properties:
+        etag:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/YoutubeDataItem'
+        kind:
+          type: string
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+    YoutubeDataItem:
+      type: object
+      additionalProperties: false
+      properties:
+        contentDetails:
+          $ref: '#/components/schemas/ContentDetails'
+        etag:
+          type: string
+        id:
+          type: string
+        kind:
+          type: string
+        player:
+          $ref: '#/components/schemas/Player'
+        recordingDetails:
+          $ref: '#/components/schemas/Content'
+        snippet:
+          $ref: '#/components/schemas/Snippet'
+        statistics:
+          $ref: '#/components/schemas/Statistics'
+        status:
+          $ref: '#/components/schemas/Status'
+    ContentDetails:
+      type: object
+      additionalProperties: false
+      properties:
+        caption:
+          type: string
+          format: boolean
+        contentRating:
+          $ref: '#/components/schemas/Content'
+        definition:
+          type: string
+        dimension:
+          type: string
+        duration:
+          type: string
+        licensedContent:
+          type: boolean
+        projection:
+          type: string
+    Content:
+      type: object
+      additionalProperties: false
+      title: Content
+    Player:
+      type: object
+      additionalProperties: false
+      properties:
+        embedHtml:
+          type: string
+      title: Player
+    Snippet:
+      type: object
+      additionalProperties: false
+      properties:
+        categoryId:
+          type: string
+          format: integer
+        channelId:
+          type: string
+        channelTitle:
+          type: string
+        defaultAudioLanguage:
+          type: string
+        defaultLanguage:
+          type: string
+        description:
+          type: string
+        liveBroadcastContent:
+          type: string
+        localized:
+          $ref: '#/components/schemas/Localized'
+        publishedAt:
+          type: string
+          format: date-time
+        thumbnails:
+          $ref: '#/components/schemas/Thumbnails'
+        title:
+          type: string
+      title: Snippet
+    Localized:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+        title:
+          type: string
+      title: Localized
+    Thumbnails:
+      type: object
+      additionalProperties: false
+      properties:
+        default:
+          $ref: '#/components/schemas/Default'
+        high:
+          $ref: '#/components/schemas/Default'
+        maxres:
+          $ref: '#/components/schemas/Default'
+        medium:
+          $ref: '#/components/schemas/Default'
+        standard:
+          $ref: '#/components/schemas/Default'
+      title: Thumbnails
+    Statistics:
+      type: object
+      additionalProperties: false
+      properties:
+        commentCount:
+          type: string
+          format: integer
+        favoriteCount:
+          type: string
+          format: integer
+        likeCount:
+          type: string
+          format: integer
+        viewCount:
+          type: string
+          format: integer
+      title: Statistics
+    Status:
+      type: object
+      additionalProperties: false
+      properties:
+        embeddable:
+          type: boolean
+        license:
+          type: string
+        madeForKids:
+          type: boolean
+        privacyStatus:
+          type: string
+        publicStatsViewable:
+          type: boolean
+        uploadStatus:
+          type: string
+      title: Status
+    PageInfo:
+      type: object
+      additionalProperties: false
+      properties:
+        resultsPerPage:
+          type: integer
+        totalResults:
+          type: integer
+      title: PageInfo
+    YoutubeDislike:
+      type: object
+      additionalProperties: false
+      properties:
+        dateCreated:
+          type: string
+          format: date-time
+        deleted:
+          type: boolean
+        dislikes:
+          type: integer
+        id:
+          type: string
+        likes:
+          type: integer
+        rating:
+          type: number
+        rawDislikes:
+          type: integer
+        rawLikes:
+          type: integer
+        viewCount:
+          type: integer
+      title: YoutubeDislike
+    YoutubeOperational:
+      type: object
+      additionalProperties: false
+      properties:
+        etag:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/YoutubeOperationalItem'
+        kind:
+          type: string
+      title: YoutubeOperational
+    YoutubeOperationalItem:
+      type: object
+      additionalProperties: false
+      properties:
+        chapters:
+          $ref: '#/components/schemas/Chapters'
+        etag:
+          type: string
+        id:
+          type: string
+        kind:
+          type: string
+      title: YoutubeOperationalItem
+    Chapters:
+      type: object
+      additionalProperties: false
+      properties:
+        areAutoGenerated:
+          type: boolean
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chapter'
+      title: Chapters
+    Chapter:
+      type: object
+      additionalProperties: false
+      properties:
+        thumbnails:
+          type: array
+          items:
+            $ref: '#/components/schemas/Default'
+        time:
+          type: integer
+        title:
+          type: string
+      title: Chapter
+    Default:
+      type: object
+      additionalProperties: false
+      properties:
+        height:
+          type: integer
+        url:
+          type: string
+          format: uri
+          qt-uri-protocols:
+            - https
+          qt-uri-extensions:
+            - .jpg
+        width:
+          type: integer
+      title: Default
+    YoutubeTranscripts:
+      type: object
+      additionalProperties: false
+      properties:
+        English:
+          $ref: '#/components/schemas/English'
+        German:
+          $ref: '#/components/schemas/English'
+      title: YoutubeTranscripts
+    English:
+      type: object
+      additionalProperties: false
+      properties:
+        captions:
+          $ref: '#/components/schemas/Captions'
+        transcripts:
+          $ref: '#/components/schemas/Transcripts'
+      title: English
+    Captions:
+      type: object
+      additionalProperties: false
+      properties:
+        languageCode:
+          type: string
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+      title: Captions
+    Transcripts:
+      type: object
+      additionalProperties: false
+      properties:
+        languageCode:
+          type: string
+        tracks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Track'
+      title: Transcripts
+    Track:
+      type: object
+      additionalProperties: false
+      properties:
+        baseUri:
+          type: string
+          format: uri
+          qt-uri-protocols:
+            - https
+          qt-uri-extensions:
+            - .xml
+        isDefault:
+          type: boolean
+        kind:
+          type: string
+        language:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      title: Track
+    AboutResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        apiVersion:
+          type: string
+        author:
+          type: string
+        description:
+          type: string
+        githubRepo:
+          type: string
+        lastUpdated:
+          type: string
+          format: date-time
+        license:
+          type: string
+        name:
+          type: string
+        sourceUrl:
+          type: string
+        version:
+          type: string
+      title: AboutResponse
