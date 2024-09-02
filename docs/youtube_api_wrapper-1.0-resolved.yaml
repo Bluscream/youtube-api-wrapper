@@ -1,0 +1,230 @@
+openapi: 3.0.2
+info:
+  title: YouTube API Wrapper
+  description: API for YouTube video information and transcripts
+  contact:
+    email: bluscream@gmail.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: "1.0"
+servers:
+- url: http://localhost:7077
+  description: Local development server
+tags:
+- name: Main
+  description: Main API endpoints
+- name: Transcript
+  description: Transcript-related endpoints
+- name: About
+  description: Information about the API
+paths:
+  /:
+    get:
+      summary: Get Main Information
+      description: Retrieves comprehensive information about a YouTube video
+      parameters:
+      - name: videoId
+        in: query
+        description: YouTube video ID
+        required: true
+        style: form
+        explode: true
+        schema:
+          pattern: "^[a-zA-Z0-9_-]{11}$"
+          type: string
+      - name: fresh
+        in: query
+        description: Invalidates the cache so a fresh result is returned
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              example:
+                error: missing or invalid 'videoId'
+  /caption:
+    get:
+      summary: Get Caption
+      description: Retrieves captions for a YouTube video
+      parameters:
+      - name: videoId
+        in: query
+        description: YouTube video ID
+        required: true
+        style: form
+        explode: true
+        schema:
+          pattern: "^[a-zA-Z0-9_-]{11}$"
+          type: string
+      - name: format
+        in: query
+        description: "Caption format (e.g., vtt, srt)"
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          default: vtt
+          enum:
+          - vtt
+          - srt
+      - name: lang
+        in: query
+        description: Language code
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          default: en
+      responses:
+        "200":
+          description: Transcript
+          content:
+            text/plain: {}
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              example:
+                error: "Need 'videoId', 'lang', and 'format'"
+  /subtitle:
+    get:
+      summary: Get Subtitle
+      description: Retrieves subtitles for a YouTube video
+      parameters:
+      - name: videoId
+        in: query
+        description: YouTube video ID
+        required: true
+        style: form
+        explode: true
+        schema:
+          pattern: "^[a-zA-Z0-9_-]{11}$"
+          type: string
+      - name: lang
+        in: query
+        description: Language code
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          default: en
+      responses:
+        "200":
+          description: Subtitle
+          content:
+            text/plain: {}
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              example:
+                error: Need 'videoId' and 'lang'
+  /transcript:
+    get:
+      summary: Get Transcript
+      description: Retrieves transcript for a YouTube video
+      parameters:
+      - name: videoId
+        in: query
+        description: YouTube video ID
+        required: true
+        style: form
+        explode: true
+        schema:
+          pattern: "^[a-zA-Z0-9_-]{11}$"
+          type: string
+      - name: lang
+        in: query
+        description: Language code
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          default: en
+      responses:
+        "200":
+          description: Transcript
+          content:
+            text/plain: {}
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              example:
+                error: Need 'videoId' and 'lang'
+  /about:
+    get:
+      summary: Get About Information
+      description: Retrieves information about the API
+      responses:
+        "200":
+          description: About Information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+components:
+  schemas:
+    VideoId:
+      pattern: "^[a-zA-Z0-9_-]{11}$"
+      type: string
+    Boolean:
+      type: boolean
+    inline_response_200:
+      type: object
+      properties:
+        youtube-data:
+          type: object
+        youtube-dislike:
+          type: object
+        youtube-sponsorblock:
+          type: object
+        youtube-dearrow:
+          type: object
+        youtube-operational:
+          type: object
+        time:
+          type: number
+    inline_response_200_1:
+      type: object
+      properties:
+        docs:
+          $ref: '#/components/schemas/inline_response_200_1_docs'
+    inline_response_200_1_docs_query_params:
+      type: object
+      properties:
+        type:
+          type: string
+        default:
+          type: boolean
+        description:
+          type: string
+    inline_response_200_1_docs_query:
+      type: object
+      properties:
+        params:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/inline_response_200_1_docs_query_params'
+    inline_response_200_1_docs:
+      type: object
+      properties:
+        query:
+          $ref: '#/components/schemas/inline_response_200_1_docs_query'

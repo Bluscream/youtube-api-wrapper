@@ -1,0 +1,295 @@
+{
+  "openapi" : "3.0.2",
+  "info" : {
+    "title" : "YouTube API Wrapper",
+    "version" : "1.0",
+    "description" : "API for YouTube video information and transcripts",
+    "contact" : {
+      "email" : "bluscream@gmail.com"
+    },
+    "license" : {
+      "name" : "MIT",
+      "url" : "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers" : [ {
+    "url" : "http://localhost:7077",
+    "description" : "Local development server"
+  } ],
+  "tags" : [ {
+    "name" : "Main",
+    "description" : "Main API endpoints"
+  }, {
+    "name" : "Transcript",
+    "description" : "Transcript-related endpoints"
+  }, {
+    "name" : "About",
+    "description" : "Information about the API"
+  } ],
+  "paths" : {
+    "/" : {
+      "get" : {
+        "summary" : "Get Main Information",
+        "description" : "Retrieves comprehensive information about a YouTube video",
+        "parameters" : [ {
+          "name" : "videoId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[a-zA-Z0-9_-]{11}$"
+          },
+          "description" : "YouTube video ID"
+        }, {
+          "name" : "fresh",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          },
+          "description" : "Invalidates the cache so a fresh result is returned"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful response",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "youtube-data" : {
+                      "type" : "object"
+                    },
+                    "youtube-dislike" : {
+                      "type" : "object"
+                    },
+                    "youtube-sponsorblock" : {
+                      "type" : "object"
+                    },
+                    "youtube-dearrow" : {
+                      "type" : "object"
+                    },
+                    "youtube-operational" : {
+                      "type" : "object"
+                    },
+                    "time" : {
+                      "type" : "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "example" : {
+                  "error" : "missing or invalid 'videoId'"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/caption" : {
+      "get" : {
+        "summary" : "Get Caption",
+        "description" : "Retrieves captions for a YouTube video",
+        "parameters" : [ {
+          "name" : "videoId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[a-zA-Z0-9_-]{11}$"
+          },
+          "description" : "YouTube video ID"
+        }, {
+          "name" : "format",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "vtt", "srt" ],
+            "default" : "vtt"
+          },
+          "description" : "Caption format (e.g., vtt, srt)"
+        }, {
+          "name" : "lang",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "en"
+          },
+          "description" : "Language code"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Transcript",
+            "content" : {
+              "text/plain" : { }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "example" : {
+                  "error" : "Need 'videoId', 'lang', and 'format'"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subtitle" : {
+      "get" : {
+        "summary" : "Get Subtitle",
+        "description" : "Retrieves subtitles for a YouTube video",
+        "parameters" : [ {
+          "name" : "videoId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[a-zA-Z0-9_-]{11}$"
+          },
+          "description" : "YouTube video ID"
+        }, {
+          "name" : "lang",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "en"
+          },
+          "description" : "Language code"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Subtitle",
+            "content" : {
+              "text/plain" : { }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "example" : {
+                  "error" : "Need 'videoId' and 'lang'"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transcript" : {
+      "get" : {
+        "summary" : "Get Transcript",
+        "description" : "Retrieves transcript for a YouTube video",
+        "parameters" : [ {
+          "name" : "videoId",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[a-zA-Z0-9_-]{11}$"
+          },
+          "description" : "YouTube video ID"
+        }, {
+          "name" : "lang",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "en"
+          },
+          "description" : "Language code"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Transcript",
+            "content" : {
+              "text/plain" : { }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "example" : {
+                  "error" : "Need 'videoId' and 'lang'"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/about" : {
+      "get" : {
+        "summary" : "Get About Information",
+        "description" : "Retrieves information about the API",
+        "responses" : {
+          "200" : {
+            "description" : "About Information",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "docs" : {
+                      "type" : "object",
+                      "properties" : {
+                        "query" : {
+                          "type" : "object",
+                          "properties" : {
+                            "params" : {
+                              "type" : "object",
+                              "additionalProperties" : {
+                                "type" : "object",
+                                "properties" : {
+                                  "type" : {
+                                    "type" : "string"
+                                  },
+                                  "default" : {
+                                    "type" : "boolean"
+                                  },
+                                  "description" : {
+                                    "type" : "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "VideoId" : {
+        "type" : "string",
+        "pattern" : "^[a-zA-Z0-9_-]{11}$"
+      },
+      "Boolean" : {
+        "type" : "boolean"
+      }
+    }
+  }
+}
