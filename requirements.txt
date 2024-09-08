@@ -28,7 +28,7 @@ multidict==6.0.5
 priority==2.0.0
 protobuf==3.18.3
 pydantic==2.8.2
-pydantic_core==2.20.1
+pydantic_core==2.23.3
 python-dotenv==1.0.1
 Quart==0.19.6
 quart-cors==0.7.0
