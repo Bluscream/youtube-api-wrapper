@@ -32,13 +32,13 @@ API_ENDPOINTS = { # Hardcoded list of API endpoints
     "youtube-dearrow": "https://sponsor.ajay.app/api/branding?videoID={ytid}",
     # "youtube-subtitles": "http://127.0.0.1:5001/?format=raw&videoID={ytid}"
     # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=isPaidPromotion,isMemberOnly,isOriginal,isRestricted,isPremium,explicitLyrics,status,chapters",
-    "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
+    # "youtube-operational": "https://yt.lemnoslife.com/videos?id={ytid}&part=chapters",
 }
 
 if YT_API_KEY:
     API_ENDPOINTS["youtube-data"] = "https://youtube.googleapis.com/youtube/v3/videos?key={YT_API_KEY}&part=contentDetails,id,player,recordingDetails,snippet,statistics,status,topicDetails&id={ytid}"
 
-DEFAULT_TASKS = ["youtube-data","youtube-dislike","youtube-sponsorblock","youtube-dearrow","youtube-subtitles","youtube-operational"]
+DEFAULT_TASKS = ["youtube-data","youtube-dislike","youtube-sponsorblock","youtube-dearrow","youtube-subtitles"] # ,"youtube-operational"]
 # region Docs
 DOCS = {
     "docs": {
@@ -204,7 +204,9 @@ def get_main():
         combined_response["time"] = time.time() - start_time
         return jsonify(combined_response)
 
-    tasks.start(get_transcripts, yt_video_id, [("English", "en")]) # todo: langs
+    langs = [a.strip() for a in str.split(request.args.get("langs", "en,de", str),',')]
+
+    tasks.start(get_transcripts, yt_video_id, langs) # todo: langs
 
     # Use ThreadPoolExecutor to make concurrent requests
     with ThreadPoolExecutor(max_workers=len(API_ENDPOINTS)) as executor:
